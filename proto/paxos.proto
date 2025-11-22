@@ -1,0 +1,248 @@
+syntax = "proto3";
+
+package banking;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "pb/bank-application/pb";
+
+enum MessageType {
+  REQUEST = 0;
+  RESPONSE = 1;
+  ACCEPT = 2;
+  ACCEPTED = 3;
+  COMMIT = 4;
+  COMMITED = 5;
+  EXECUTE = 6;
+  EXECUTED = 7;
+}
+
+message Transaction {
+  string sender = 1;
+  string reciever = 2;
+  int32 amount = 3;
+}
+
+message BallotNumber {
+  int32 term_no = 1;
+  int32 node_no = 2;
+}
+
+message ClientRequestMessage {
+  MessageType message_type = 1;
+  int32 time = 2;
+  Transaction transaction = 3;
+  string client_number = 4;
+}
+
+message Result {
+  bool is_executed = 1;
+  int32 balance = 2; // for read only transaction
+}
+
+message ClientResponseMessage {
+  MessageType message_type = 1;
+  BallotNumber ballot_no = 2;
+  int32 time = 3;
+  string client_number = 4;
+  bool result = 5;
+  Result result_struct = 6;
+}
+
+message AcceptMessageRequest {
+  MessageType message_type = 1;
+  BallotNumber ballot_number = 2;
+  int32 sequence_number = 3;
+  Transaction transaction = 4;
+  ClientRequestMessage client_request_message = 5;
+}
+
+message AcceptMessageResponse {
+  MessageType message_type = 1;
+  BallotNumber ballot_number = 2;
+  int32 sequence_number = 3;
+  Transaction transaction = 4;
+  int32 node_number = 5;
+}
+
+message CommitMessageRequest {
+  MessageType message_type = 1;
+  BallotNumber ballot_number = 2;
+  int32 sequence_number = 3;
+  Transaction transaction = 4;
+  ClientRequestMessage client_request_message = 5;
+}
+
+message CommitMessageResponse {
+  MessageType message_type = 1;
+  BallotNumber ballot_number = 2;
+  int32 sequence_number = 3;
+}
+
+message StatusRequest {
+  int32 sequence_number = 1;
+}
+
+message StatusResponse {
+  int32 node_id = 1;
+  int32 sequence_number = 2;
+  string status = 3;
+  ClientRequestMessage client_request_message = 4;
+}
+
+message DBRequest {}
+
+message DBResponse {
+  int32 node_id = 1;
+  map<string, int32> balances = 2;
+}
+
+message LogRequest {}
+
+message LogEntryMessage {
+  int32 sequence_number = 1;
+  BallotNumber ballot_number = 2;
+  ClientRequestMessage client_request = 3;
+  string status = 4;
+}
+
+message LogResponse {
+  int32 node_id = 1;
+  repeated LogEntryMessage entries = 2;
+}
+
+message AcceptLogEntry {
+  BallotNumber ballot_number = 1;
+  int32 sequence_number = 2;
+  ClientRequestMessage accept_value = 3;
+  string status = 4;
+}
+
+message PrepareMessage {
+  BallotNumber ballot_number = 1;
+}
+
+message PromiseMessage {
+  BallotNumber ballot_number = 1;
+  repeated AcceptLogEntry accept_log = 2;
+  int32 from_node_id = 3;
+}
+
+message NewViewRequest {
+  BallotNumber ballot_number = 1;
+  repeated AcceptLogEntry accept_log = 2;
+}
+
+message NewViewResponse {
+  repeated AcceptMessageResponse accept_message_response = 1;
+}
+
+message HeartbeatRequest {
+  int32 leader_id = 1;
+  BallotNumber ballot_number = 2;
+}
+
+message HeartbeatResponse {
+  bool ack = 1;
+}
+
+message AliveRequest {
+  bool alive = 1;
+  repeated int32 alive_nodes = 2;
+}
+
+message AliveResponse {
+  bool success = 1;
+}
+
+message PrintViewRequest {}
+
+message PrintViewResponse {
+  repeated NewViewRequest new_view_request = 1;
+}
+
+message FailCurrentLeaderRequest {
+
+}
+
+message FailCurrentLeaderResponse {
+
+}
+
+message PrintLogRequest {
+}
+
+message PrintLogResponse {
+  repeated LogEntryMessage log_entry_message = 1;
+}
+
+message ActiveCatchUpRequest {
+  repeated AcceptLogEntry accept_log_entries = 1;
+}
+
+message ActiveCatchUpResponse {
+
+}
+
+message FlushAndUpdateStatusRequest {
+  repeated int32 live_nodes = 1;
+  bool is_alive = 2;
+}
+
+message ReadClientBalanceRequest {
+  int32 time = 1;
+  string client_id = 2;
+}
+
+message ReadClientBalanceResponse {
+  int32 balance = 1;
+}
+
+message PrintBalanceRequest {
+  string client_id = 1;
+}
+
+message PrintBalanceResponse {
+  int32 balance = 1;
+}
+
+message GetLeaderLogRequest {
+}
+
+message GetLeaderLogResponse {
+  bool is_leader = 1;
+  repeated AcceptLogEntry accept_log_entries = 2;
+}
+
+service BankApplication {
+  rpc AcceptMessage(AcceptMessageRequest) returns (AcceptMessageResponse);
+  rpc CommitMessage(CommitMessageRequest) returns (CommitMessageResponse);
+
+  // For leader election
+  rpc Prepare(PrepareMessage) returns (google.protobuf.Empty);
+  rpc Promise(PromiseMessage) returns (google.protobuf.Empty);
+  rpc NewView(NewViewRequest) returns (NewViewResponse);
+  
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc UpdateNodeStatus(AliveRequest) returns (AliveResponse);
+
+  rpc FailCurrentLeader(FailCurrentLeaderRequest) returns (FailCurrentLeaderResponse);
+
+  // CLIENT RPC's
+  rpc HandleClientRequest(ClientRequestMessage) returns (ClientResponseMessage);
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+  rpc GetDB(DBRequest) returns (DBResponse);
+  // not using now, replaced by PrintLog
+  rpc GetLog(LogRequest) returns (LogResponse);
+  rpc PrintView(PrintViewRequest) returns (PrintViewResponse);
+  rpc PrintLog(PrintLogRequest) returns (PrintLogResponse);
+  rpc PrintBalance(PrintBalanceRequest) returns (PrintBalanceResponse);
+
+
+  rpc PerformActiveCatchUpAsFollower(ActiveCatchUpRequest) returns (ActiveCatchUpResponse);
+
+  rpc GetLeaderLogForActiveCatching(GetLeaderLogRequest) returns (GetLeaderLogResponse);
+
+  rpc FlushPreviousDataAndUpdatePeersStatus   (FlushAndUpdateStatusRequest) returns (google.protobuf.Empty);
+  rpc ReadClientBalance(ReadClientBalanceRequest) returns (ReadClientBalanceResponse);
+}
