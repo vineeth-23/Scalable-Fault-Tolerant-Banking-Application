@@ -46,6 +46,7 @@ func ParseCSV(path string) map[int]*TxnSet {
 
 	var currentSet int
 	var currentLiveNodes []string
+	var globalTime int32 = 0
 
 	for _, row := range rows[1:] {
 
@@ -85,8 +86,10 @@ func ParseCSV(path string) map[int]*TxnSet {
 		if strings.HasPrefix(cell, "F(") && strings.HasSuffix(cell, ")") {
 			nodeStr := strings.TrimSuffix(strings.TrimPrefix(cell, "F("), ")")
 			nodeID := parseNodeID(nodeStr)
+			globalTime++
 
 			txn = &Txn{
+				Time: globalTime,
 				Command: Command{
 					Type:   CommandTypeFail,
 					NodeID: nodeID,
@@ -97,8 +100,10 @@ func ParseCSV(path string) map[int]*TxnSet {
 			// -------- RECOVER --------
 			nodeStr := strings.TrimSuffix(strings.TrimPrefix(cell, "R("), ")")
 			nodeID := parseNodeID(nodeStr)
+			globalTime++
 
 			txn = &Txn{
+				Time: globalTime,
 				Command: Command{
 					Type:   CommandTypeRecover,
 					NodeID: nodeID,
@@ -113,8 +118,10 @@ func ParseCSV(path string) map[int]*TxnSet {
 			// READ (7800)
 			if len(parts) == 1 {
 				clientID := strings.TrimSpace(parts[0])
+				globalTime++
 
 				txn = &Txn{
+					Time:   globalTime,
 					Sender: clientID,
 					Command: Command{
 						Type: CommandTypeRead,
@@ -125,8 +132,10 @@ func ParseCSV(path string) map[int]*TxnSet {
 				sender := strings.TrimSpace(parts[0])
 				receiver := strings.TrimSpace(parts[1])
 				amt := parseAmount(parts[2])
+				globalTime++
 
 				txn = &Txn{
+					Time:     globalTime,
 					Sender:   sender,
 					Reciever: receiver,
 					Amount:   amt,

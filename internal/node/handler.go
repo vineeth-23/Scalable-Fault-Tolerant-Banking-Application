@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bank-application/internal/common"
 	"context"
 	"fmt"
 	"sync"
@@ -12,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, clientTransactionKey string) {
+func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters *common.AdditionalParameteres) {
 	n.mu.Lock()
 	duplicate := false
 	for _, entry := range n.SequenceNumberToLogEntry {
@@ -64,6 +65,10 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, clientTransactionKey
 		SequenceNumber:       int32(seq),
 		Transaction:          req.Transaction,
 		ClientRequestMessage: req,
+		AdditionalParameteresFor_2Pc: &pb.AdditionalParameteresFor2PC{
+			PhaseType: string(additionalParameters.Phase),
+			ShardType: string(additionalParameters.Shard),
+		},
 	}
 
 	accept.BallotNumber = &pb.BallotNumber{
@@ -333,14 +338,12 @@ func (n *Node) executeInOrder() {
 			continue
 		}
 
-		//added here
 		if entry.Status == "EXECUTED" {
 			n.LastExecutedSequenceNumber = nextSeq
 			//log.Printf("Ideally shld not come here: Already executed seq=%d with key = %s", nextSeq, key)
 			continue
 		}
 
-		// Execute
 		isSuccess := false
 		if isTransactionValid(txn) {
 			isSuccess = n.applyTransaction(txn, entry)
@@ -360,9 +363,6 @@ func (n *Node) executeInOrder() {
 		}
 
 		n.LastReplies[key] = resp
-
-		//CSV UPDATE
-		//n.updateBalancesCSV()
 
 		n.replyCond.Broadcast()
 
@@ -387,6 +387,39 @@ func (n *Node) applyTransaction(txn *pb.Transaction, logEntry *LogEntry) bool {
 	sender := txn.Sender
 	receiver := txn.Reciever
 	amt := txn.Amount
+	txnTime := logEntry.Request.GetTime()
+
+	if sender == common.SenderNotValid {
+		oldVal := n.Balances[receiver]
+		newVal := oldVal + amt
+
+		n.WAL[txnTime] = &WALEntry{
+			TxnTime:  txnTime,
+			ClientID: receiver,
+			OldValue: oldVal,
+			NewValue: newVal,
+		}
+		n.Balances[receiver] = newVal
+		return true
+	}
+
+	if receiver == common.ReceiverNotValid {
+		oldVal := n.Balances[sender]
+		if oldVal < amt {
+			return false
+		}
+		newVal := oldVal - amt
+
+		n.WAL[txnTime] = &WALEntry{
+			TxnTime:  txnTime,
+			ClientID: sender,
+			OldValue: oldVal,
+			NewValue: newVal,
+		}
+
+		n.Balances[sender] = newVal
+		return true
+	}
 
 	if n.Balances[sender] >= amt {
 		n.Balances[sender] -= amt

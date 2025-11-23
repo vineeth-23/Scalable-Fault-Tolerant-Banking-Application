@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bank-application/internal/common"
 	"bank-application/pb/bank-application/pb"
 	"context"
 	"encoding/csv"
@@ -151,9 +152,9 @@ func (n *Node) startHeartbeats() {
 						}
 
 						_, err = follower.Heartbeat(ctx, req)
-						if err != nil {
-							log.Printf("[Leader %d] Heartbeat RPC to node %d failed: %v", n.ID, peerID, err)
-						}
+						//if err != nil {
+						//	log.Printf("[Leader %d] Heartbeat RPC to node %d failed: %v", n.ID, peerID, err)
+						//}
 					}(peerID, addr)
 				}
 
@@ -372,4 +373,30 @@ func (s *NodeServer) UpdateMyLogToLeadersLog() {
 
 		return
 	}
+}
+
+func (n *Node) clientIDForThisNode(req *pb.ClientRequestMessage) string {
+	tx := req.GetTransaction()
+	sender := tx.GetSender()
+	receiver := tx.GetReciever()
+
+	start, end := common.ShardRangeForNode(n.ID)
+
+	if sender != "" && sender != common.SenderNotValid {
+		if sid, err := strconv.Atoi(sender); err == nil {
+			if int32(sid) >= start && int32(sid) <= end {
+				return sender
+			}
+		}
+	}
+
+	if receiver != "" && receiver != common.ReceiverNotValid {
+		if rid, err := strconv.Atoi(receiver); err == nil {
+			if int32(rid) >= start && int32(rid) <= end {
+				return receiver
+			}
+		}
+	}
+
+	return ""
 }

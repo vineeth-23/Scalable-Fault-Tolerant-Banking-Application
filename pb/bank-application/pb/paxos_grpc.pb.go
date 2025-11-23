@@ -39,6 +39,11 @@ const (
 	BankApplication_GetLeaderLogForActiveCatching_FullMethodName         = "/banking.BankApplication/GetLeaderLogForActiveCatching"
 	BankApplication_FlushPreviousDataAndUpdatePeersStatus_FullMethodName = "/banking.BankApplication/FlushPreviousDataAndUpdatePeersStatus"
 	BankApplication_ReadClientBalance_FullMethodName                     = "/banking.BankApplication/ReadClientBalance"
+	BankApplication_GetClusterLeader_FullMethodName                      = "/banking.BankApplication/GetClusterLeader"
+	BankApplication_Prepare2PC_FullMethodName                            = "/banking.BankApplication/Prepare2PC"
+	BankApplication_CommitOrAbort2PC_FullMethodName                      = "/banking.BankApplication/CommitOrAbort2PC"
+	BankApplication_AcceptMessageFor2PCCommit_FullMethodName             = "/banking.BankApplication/AcceptMessageFor2PCCommit"
+	BankApplication_CommitMessageFor2PCCommit_FullMethodName             = "/banking.BankApplication/CommitMessageFor2PCCommit"
 )
 
 // BankApplicationClient is the client API for BankApplication service.
@@ -67,6 +72,12 @@ type BankApplicationClient interface {
 	GetLeaderLogForActiveCatching(ctx context.Context, in *GetLeaderLogRequest, opts ...grpc.CallOption) (*GetLeaderLogResponse, error)
 	FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, in *FlushAndUpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ReadClientBalance(ctx context.Context, in *ReadClientBalanceRequest, opts ...grpc.CallOption) (*ReadClientBalanceResponse, error)
+	// 2PC
+	GetClusterLeader(ctx context.Context, in *GetClusterLeaderRequest, opts ...grpc.CallOption) (*GetClusterLeaderResponse, error)
+	Prepare2PC(ctx context.Context, in *Prepare2PCRequest, opts ...grpc.CallOption) (*Prepare2PCResponse, error)
+	CommitOrAbort2PC(ctx context.Context, in *CommitOrAbort2PCRequest, opts ...grpc.CallOption) (*CommitOrAbort2PCResponse, error)
+	AcceptMessageFor2PCCommit(ctx context.Context, in *AcceptMessageFor2PCCommitRequest, opts ...grpc.CallOption) (*AcceptMessageFor2PCCommitResponse, error)
+	CommitMessageFor2PCCommit(ctx context.Context, in *CommitMessageFor2PCCommitRequest, opts ...grpc.CallOption) (*CommitMessageFor2PCCommitResponse, error)
 }
 
 type bankApplicationClient struct {
@@ -267,6 +278,56 @@ func (c *bankApplicationClient) ReadClientBalance(ctx context.Context, in *ReadC
 	return out, nil
 }
 
+func (c *bankApplicationClient) GetClusterLeader(ctx context.Context, in *GetClusterLeaderRequest, opts ...grpc.CallOption) (*GetClusterLeaderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetClusterLeaderResponse)
+	err := c.cc.Invoke(ctx, BankApplication_GetClusterLeader_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bankApplicationClient) Prepare2PC(ctx context.Context, in *Prepare2PCRequest, opts ...grpc.CallOption) (*Prepare2PCResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Prepare2PCResponse)
+	err := c.cc.Invoke(ctx, BankApplication_Prepare2PC_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bankApplicationClient) CommitOrAbort2PC(ctx context.Context, in *CommitOrAbort2PCRequest, opts ...grpc.CallOption) (*CommitOrAbort2PCResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitOrAbort2PCResponse)
+	err := c.cc.Invoke(ctx, BankApplication_CommitOrAbort2PC_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bankApplicationClient) AcceptMessageFor2PCCommit(ctx context.Context, in *AcceptMessageFor2PCCommitRequest, opts ...grpc.CallOption) (*AcceptMessageFor2PCCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptMessageFor2PCCommitResponse)
+	err := c.cc.Invoke(ctx, BankApplication_AcceptMessageFor2PCCommit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bankApplicationClient) CommitMessageFor2PCCommit(ctx context.Context, in *CommitMessageFor2PCCommitRequest, opts ...grpc.CallOption) (*CommitMessageFor2PCCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitMessageFor2PCCommitResponse)
+	err := c.cc.Invoke(ctx, BankApplication_CommitMessageFor2PCCommit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BankApplicationServer is the server API for BankApplication service.
 // All implementations must embed UnimplementedBankApplicationServer
 // for forward compatibility.
@@ -293,6 +354,12 @@ type BankApplicationServer interface {
 	GetLeaderLogForActiveCatching(context.Context, *GetLeaderLogRequest) (*GetLeaderLogResponse, error)
 	FlushPreviousDataAndUpdatePeersStatus(context.Context, *FlushAndUpdateStatusRequest) (*emptypb.Empty, error)
 	ReadClientBalance(context.Context, *ReadClientBalanceRequest) (*ReadClientBalanceResponse, error)
+	// 2PC
+	GetClusterLeader(context.Context, *GetClusterLeaderRequest) (*GetClusterLeaderResponse, error)
+	Prepare2PC(context.Context, *Prepare2PCRequest) (*Prepare2PCResponse, error)
+	CommitOrAbort2PC(context.Context, *CommitOrAbort2PCRequest) (*CommitOrAbort2PCResponse, error)
+	AcceptMessageFor2PCCommit(context.Context, *AcceptMessageFor2PCCommitRequest) (*AcceptMessageFor2PCCommitResponse, error)
+	CommitMessageFor2PCCommit(context.Context, *CommitMessageFor2PCCommitRequest) (*CommitMessageFor2PCCommitResponse, error)
 	mustEmbedUnimplementedBankApplicationServer()
 }
 
@@ -359,6 +426,21 @@ func (UnimplementedBankApplicationServer) FlushPreviousDataAndUpdatePeersStatus(
 }
 func (UnimplementedBankApplicationServer) ReadClientBalance(context.Context, *ReadClientBalanceRequest) (*ReadClientBalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadClientBalance not implemented")
+}
+func (UnimplementedBankApplicationServer) GetClusterLeader(context.Context, *GetClusterLeaderRequest) (*GetClusterLeaderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterLeader not implemented")
+}
+func (UnimplementedBankApplicationServer) Prepare2PC(context.Context, *Prepare2PCRequest) (*Prepare2PCResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Prepare2PC not implemented")
+}
+func (UnimplementedBankApplicationServer) CommitOrAbort2PC(context.Context, *CommitOrAbort2PCRequest) (*CommitOrAbort2PCResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitOrAbort2PC not implemented")
+}
+func (UnimplementedBankApplicationServer) AcceptMessageFor2PCCommit(context.Context, *AcceptMessageFor2PCCommitRequest) (*AcceptMessageFor2PCCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcceptMessageFor2PCCommit not implemented")
+}
+func (UnimplementedBankApplicationServer) CommitMessageFor2PCCommit(context.Context, *CommitMessageFor2PCCommitRequest) (*CommitMessageFor2PCCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitMessageFor2PCCommit not implemented")
 }
 func (UnimplementedBankApplicationServer) mustEmbedUnimplementedBankApplicationServer() {}
 func (UnimplementedBankApplicationServer) testEmbeddedByValue()                         {}
@@ -723,6 +805,96 @@ func _BankApplication_ReadClientBalance_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BankApplication_GetClusterLeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterLeaderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).GetClusterLeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_GetClusterLeader_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).GetClusterLeader(ctx, req.(*GetClusterLeaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BankApplication_Prepare2PC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Prepare2PCRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).Prepare2PC(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_Prepare2PC_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).Prepare2PC(ctx, req.(*Prepare2PCRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BankApplication_CommitOrAbort2PC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitOrAbort2PCRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).CommitOrAbort2PC(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_CommitOrAbort2PC_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).CommitOrAbort2PC(ctx, req.(*CommitOrAbort2PCRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BankApplication_AcceptMessageFor2PCCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptMessageFor2PCCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).AcceptMessageFor2PCCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_AcceptMessageFor2PCCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).AcceptMessageFor2PCCommit(ctx, req.(*AcceptMessageFor2PCCommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BankApplication_CommitMessageFor2PCCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitMessageFor2PCCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).CommitMessageFor2PCCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_CommitMessageFor2PCCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).CommitMessageFor2PCCommit(ctx, req.(*CommitMessageFor2PCCommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BankApplication_ServiceDesc is the grpc.ServiceDesc for BankApplication service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -805,6 +977,26 @@ var BankApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadClientBalance",
 			Handler:    _BankApplication_ReadClientBalance_Handler,
+		},
+		{
+			MethodName: "GetClusterLeader",
+			Handler:    _BankApplication_GetClusterLeader_Handler,
+		},
+		{
+			MethodName: "Prepare2PC",
+			Handler:    _BankApplication_Prepare2PC_Handler,
+		},
+		{
+			MethodName: "CommitOrAbort2PC",
+			Handler:    _BankApplication_CommitOrAbort2PC_Handler,
+		},
+		{
+			MethodName: "AcceptMessageFor2PCCommit",
+			Handler:    _BankApplication_AcceptMessageFor2PCCommit_Handler,
+		},
+		{
+			MethodName: "CommitMessageFor2PCCommit",
+			Handler:    _BankApplication_CommitMessageFor2PCCommit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

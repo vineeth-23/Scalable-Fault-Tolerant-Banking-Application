@@ -49,12 +49,18 @@ message ClientResponseMessage {
   Result result_struct = 6;
 }
 
+message AdditionalParameteresFor2PC {
+  string phase_type = 1;
+  string shard_type = 2;
+}
+
 message AcceptMessageRequest {
   MessageType message_type = 1;
   BallotNumber ballot_number = 2;
   int32 sequence_number = 3;
   Transaction transaction = 4;
   ClientRequestMessage client_request_message = 5;
+  AdditionalParameteresFor2PC additional_parameteres_for_2pc = 6;
 }
 
 message AcceptMessageResponse {
@@ -214,6 +220,51 @@ message GetLeaderLogResponse {
   repeated AcceptLogEntry accept_log_entries = 2;
 }
 
+message GetClusterLeaderRequest {
+}
+
+message GetClusterLeaderResponse {
+  bool is_leader = 1;
+  int32 leader_id = 2;
+}
+
+message Prepare2PCRequest {
+  ClientRequestMessage original_request = 1;
+}
+
+message Prepare2PCResponse {
+  bool prepared = 1;
+  string reason = 2;
+}
+
+message CommitOrAbort2PCRequest {
+  ClientRequestMessage original_request = 1;
+  bool commit = 2; // if true: then commit,else: abort
+}
+
+message CommitOrAbort2PCResponse {
+  bool success = 1;
+  string reason = 2;
+}
+
+message AcceptMessageFor2PCCommitRequest {
+  ClientRequestMessage original_request = 1;
+  bool commit = 2;
+}
+
+message AcceptMessageFor2PCCommitResponse {
+  bool success = 1;
+}
+
+message CommitMessageFor2PCCommitRequest {
+  ClientRequestMessage original_request = 1;
+  bool commit = 2;
+}
+
+message CommitMessageFor2PCCommitResponse {
+  bool success = 1;
+}
+
 service BankApplication {
   rpc AcceptMessage(AcceptMessageRequest) returns (AcceptMessageResponse);
   rpc CommitMessage(CommitMessageRequest) returns (CommitMessageResponse);
@@ -245,4 +296,12 @@ service BankApplication {
 
   rpc FlushPreviousDataAndUpdatePeersStatus   (FlushAndUpdateStatusRequest) returns (google.protobuf.Empty);
   rpc ReadClientBalance(ReadClientBalanceRequest) returns (ReadClientBalanceResponse);
+
+  // 2PC
+  rpc GetClusterLeader(GetClusterLeaderRequest) returns (GetClusterLeaderResponse);
+  rpc Prepare2PC(Prepare2PCRequest) returns (Prepare2PCResponse);
+
+  rpc CommitOrAbort2PC(CommitOrAbort2PCRequest) returns (CommitOrAbort2PCResponse);
+  rpc AcceptMessageFor2PCCommit(AcceptMessageFor2PCCommitRequest) returns (AcceptMessageFor2PCCommitResponse);
+  rpc CommitMessageFor2PCCommit(CommitMessageFor2PCCommitRequest) returns (CommitMessageFor2PCCommitResponse);
 }

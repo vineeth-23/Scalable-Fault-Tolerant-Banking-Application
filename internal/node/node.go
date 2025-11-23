@@ -29,6 +29,13 @@ type LogEntry struct {
 	Status         string
 }
 
+type WALEntry struct {
+	TxnTime  int32
+	ClientID string
+	OldValue int32
+	NewValue int32
+}
+
 // Node represents a Paxos node
 type Node struct {
 	mu     sync.Mutex
@@ -85,7 +92,9 @@ type Node struct {
 
 	// fields added for 2PC impltn
 	LockTable         map[string]bool
+	twoPCTimeout      time.Duration
 	AliveClusterPeers map[int32]string // nodeID -> address (all peers which belongs to same cluster)
+	WAL               map[int32]*WALEntry
 }
 
 func NewNode(id int32, address string, peers map[int32]string) *Node {
@@ -114,6 +123,8 @@ func NewNode(id int32, address string, peers map[int32]string) *Node {
 		promiseInbox: make(map[int32]*pb.PromiseMessage),
 		isAlive:      true,
 		LockTable:    make(map[string]bool),
+		twoPCTimeout: 5 * time.Second,
+		WAL:          make(map[int32]*WALEntry),
 	}
 
 	seed := time.Now().UnixNano() + int64(id)*1000003

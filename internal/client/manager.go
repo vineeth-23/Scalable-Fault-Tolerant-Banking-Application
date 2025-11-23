@@ -187,7 +187,6 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 	//var wg sync.WaitGroup
 
 	for _, tx := range txns {
-		tx.Time = cm.nextGlobalTime()
 		//wg.Add(1)
 
 		//go func(tx *Txn) {

@@ -7,6 +7,8 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	pb "bank-application/pb/bank-application/pb"
@@ -147,7 +149,10 @@ func (s *NodeServer) handleIntraShardTransaction(
 	}
 	s.node.mu.Unlock()
 
-	s.node.ImplementPaxos(req, key)
+	additionalParameters := &common.AdditionalParameteres{
+		Shard: common.ShardTypeIntra,
+	}
+	s.node.ImplementPaxos(req, additionalParameters)
 
 	deadline, hasDeadline := ctx.Deadline()
 	for {
@@ -184,9 +189,199 @@ func (s *NodeServer) handleCrossShardTransaction(
 	receiver string,
 ) (*pb.ClientResponseMessage, error) {
 
-	// 2PC coordinator logic will go here later
-	// For now we just signal it is not implemented
-	return nil, status.Error(codes.Unimplemented, "cross shard transactions not implemented yet")
+	n := s.node
+	tx := req.GetTransaction()
+	amount := tx.GetAmount()
+
+	senderClientID, err1 := strconv.Atoi(sender)
+	receiverClientID, err2 := strconv.Atoi(receiver)
+	if err1 != nil || err2 != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid sender or receiver id")
+	}
+
+	senderCluster := common.GetClusterIDForClient(int32(senderClientID))
+	receiverCluster := common.GetClusterIDForClient(int32(receiverClientID))
+
+	if senderCluster == -1 || receiverCluster == -1 {
+		return nil, status.Error(codes.InvalidArgument, "sender or receiver out of range")
+	}
+
+	n.mu.Lock()
+
+	if n.LockTable[sender] {
+		n.mu.Unlock()
+		errMsg := fmt.Sprintf(
+			"Cross shard: (%s -> %s : %d) time: %d skipped due to sender lock conflict",
+			sender, receiver, amount, req.GetTime(),
+		)
+		return nil, status.Error(codes.Aborted, errMsg)
+	}
+
+	bal := n.Balances[sender]
+	if bal < amount {
+		n.mu.Unlock()
+		errMsg := fmt.Sprintf(
+			"Cross shard: (%s -> %s : %d) time: %d insufficient balance",
+			sender, receiver, amount, req.GetTime(),
+		)
+		return nil, status.Error(codes.Aborted, errMsg)
+	}
+
+	n.mu.Unlock()
+
+	additionalParameters := &common.AdditionalParameteres{
+		Shard: common.ShardTypeCross,
+		Phase: common.PhasePrepare,
+	}
+	req1 := &pb.ClientRequestMessage{
+		Transaction: &pb.Transaction{
+			Sender:   sender,
+			Reciever: common.ReceiverNotValid,
+			Amount:   amount,
+		},
+		MessageType:  req.MessageType,
+		Time:         req.GetTime(),
+		ClientNumber: req.GetClientNumber(),
+	}
+	s.node.ImplementPaxos(req1, additionalParameters)
+
+	// -----------------------------calling prepare phase of participant cluster------------------------------
+	participantNodes := common.GetClusterForClient(int32(receiverClientID))
+	var participantLeaderID int32
+	var participantLeaderAddr string
+
+	for _, nid := range participantNodes {
+		addr, ok := n.Peers[nid]
+		if !ok {
+			continue
+		}
+
+		conn, err := grpc.NewClient(
+			addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			continue
+		}
+
+		node := pb.NewBankApplicationClient(conn)
+		ctxLeader, cancelLeader := context.WithTimeout(ctx, 2*time.Second)
+		resp, err := node.GetClusterLeader(ctxLeader, &pb.GetClusterLeaderRequest{})
+		cancelLeader()
+		conn.Close()
+
+		if err != nil {
+			continue
+		}
+		if resp.GetIsLeader() && resp.GetLeaderId() != 0 {
+			participantLeaderID = resp.GetLeaderId()
+			participantLeaderAddr = n.Peers[participantLeaderID]
+			break
+		}
+		if !resp.GetIsLeader() && resp.GetLeaderId() != 0 && participantLeaderID == 0 {
+			participantLeaderID = resp.GetLeaderId()
+			participantLeaderAddr = n.Peers[participantLeaderID]
+		}
+	}
+
+	if participantLeaderID == 0 || participantLeaderAddr == "" {
+		n.mu.Lock()
+		n.LockTable[sender] = false
+		n.Balances[sender] += req.GetTransaction().GetAmount()
+		n.mu.Unlock()
+
+		return nil, status.Error(codes.Aborted, "failed to discover participant leader")
+	}
+
+	ctxPrep, cancelPrep := context.WithTimeout(ctx, n.twoPCTimeout)
+	defer cancelPrep()
+
+	conn, err := grpc.NewClient(
+		participantLeaderAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		n.mu.Lock()
+		n.LockTable[sender] = false
+		n.Balances[sender] += req.GetTransaction().GetAmount()
+		n.mu.Unlock()
+
+		return nil, status.Error(codes.Aborted, "participant leader unreachable")
+	}
+	defer conn.Close()
+
+	participantClusterLeader := pb.NewBankApplicationClient(conn)
+
+	prepResp, err := participantClusterLeader.Prepare2PC(ctxPrep, &pb.Prepare2PCRequest{
+		OriginalRequest: req,
+	})
+
+	commit := false
+	if err == nil && prepResp.GetPrepared() {
+		commit = true
+	}
+
+	_, err3 := s.CommitOrAbort2PC(ctx, &pb.CommitOrAbort2PCRequest{
+		OriginalRequest: req,
+		Commit:          commit,
+	})
+	if err3 != nil {
+		log.Printf("!!Ideally this should not happen because transaction should either be committed or aborted!!")
+		return &pb.ClientResponseMessage{
+			MessageType:  pb.MessageType_RESPONSE,
+			BallotNo:     &pb.BallotNumber{TermNo: s.node.CurrentBallot.TermNo, NodeNo: s.node.CurrentBallot.NodeNo},
+			Time:         req.GetTime(),
+			ClientNumber: req.GetClientNumber(),
+			Result:       false,
+		}, nil
+	}
+
+	ctxCommitPart, cancelCommitPart := context.WithTimeout(ctx, n.twoPCTimeout)
+	defer cancelCommitPart()
+
+	_, err4 := participantClusterLeader.CommitOrAbort2PC(ctxCommitPart, &pb.CommitOrAbort2PCRequest{
+		OriginalRequest: req,
+		Commit:          commit,
+	})
+	if err4 != nil {
+		log.Printf("!!Ideally this should not happen from participation cluster because transaction should either be committed or aborted!!")
+		return &pb.ClientResponseMessage{
+			MessageType:  pb.MessageType_RESPONSE,
+			BallotNo:     &pb.BallotNumber{TermNo: s.node.CurrentBallot.TermNo, NodeNo: s.node.CurrentBallot.NodeNo},
+			Time:         req.GetTime(),
+			ClientNumber: req.GetClientNumber(),
+			Result:       false,
+		}, nil
+	}
+
+	return &pb.ClientResponseMessage{
+		MessageType:  pb.MessageType_RESPONSE,
+		BallotNo:     &pb.BallotNumber{TermNo: s.node.CurrentBallot.TermNo, NodeNo: s.node.CurrentBallot.NodeNo},
+		Time:         req.GetTime(),
+		ClientNumber: req.GetClientNumber(),
+		Result:       true,
+	}, nil
+
+	//if err == nil && prepResp.GetPrepared() {
+	//	// handle commit phase
+	//
+	//}
+	//// Now handle when err is not nil or prepResp.GetPrepared() is false
+	//if err != nil || !prepResp.GetPrepared() {
+	//	// rollback and abort
+	//	n.mu.Lock()
+	//	n.LockTable[sender] = false
+	//	n.Balances[sender] += req.GetTransaction().GetAmount()
+	//	n.mu.Unlock()
+	//
+	//	reason := "prepare failed"
+	//	if prepResp != nil && prepResp.GetReason() != "" {
+	//		reason = prepResp.GetReason()
+	//	}
+	//	errMsg := fmt.Sprintf("prepare phase aborted: %s", reason)
+	//	return nil, status.Error(codes.Aborted, errMsg)
+	//}
+	//}
 }
 
 func (s *NodeServer) AcceptMessage(ctx context.Context, req *pb.AcceptMessageRequest) (*pb.AcceptMessageResponse, error) {
@@ -244,6 +439,20 @@ func (s *NodeServer) AcceptMessage(ctx context.Context, req *pb.AcceptMessageReq
 
 		s.node.recordMessageLocked("ACCEPTED", "SEND", req.GetBallotNumber(), int64(req.GetSequenceNumber()), req.GetClientRequestMessage())
 
+		if req.AdditionalParameteresFor_2Pc != nil && req.AdditionalParameteresFor_2Pc.ShardType == string(common.ShardTypeCross) {
+			if req.GetTransaction().GetSender() == common.SenderNotValid {
+				recvID := req.GetTransaction().GetReciever()
+				if !s.node.LockTable[recvID] {
+					s.node.LockTable[recvID] = true
+				}
+			} else if req.GetTransaction().GetSender() == common.ReceiverNotValid {
+				sendID := req.GetTransaction().GetSender()
+				if !s.node.LockTable[sendID] {
+					s.node.LockTable[sendID] = true
+				}
+			}
+		}
+
 		return &pb.AcceptMessageResponse{
 			MessageType:    pb.MessageType_ACCEPTED,
 			BallotNumber:   req.BallotNumber,
@@ -255,6 +464,64 @@ func (s *NodeServer) AcceptMessage(ctx context.Context, req *pb.AcceptMessageReq
 
 	//log.Printf("[Node %d] Rejected accept message: ballot too old", s.node.ID)
 	return nil, nil
+}
+
+func (s *NodeServer) AcceptMessageFor2PCCommit(ctx context.Context, req *pb.AcceptMessageFor2PCCommitRequest) (*pb.AcceptMessageFor2PCCommitResponse, error) {
+	n := s.node
+
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
+
+	clientID := n.clientIDForThisNode(req.GetOriginalRequest())
+	if clientID == "" {
+		return &pb.AcceptMessageFor2PCCommitResponse{Success: true}, nil
+	}
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if n.LockTable[clientID] {
+		n.LockTable[clientID] = false
+	}
+
+	return &pb.AcceptMessageFor2PCCommitResponse{Success: true}, nil
+}
+
+func (s *NodeServer) CommitMessageFor2PCCommit(ctx context.Context, req *pb.CommitMessageFor2PCCommitRequest) (*pb.CommitMessageFor2PCCommitResponse, error) {
+	n := s.node
+
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
+
+	clientID := n.clientIDForThisNode(req.GetOriginalRequest())
+	if clientID == "" {
+		return &pb.CommitMessageFor2PCCommitResponse{Success: true}, nil
+	}
+
+	isAborted := !req.GetCommit()
+	txnTime := req.GetOriginalRequest().GetTime()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if n.WAL == nil {
+		return &pb.CommitMessageFor2PCCommitResponse{Success: true}, nil
+	}
+
+	wal, ok := n.WAL[txnTime]
+	if !ok {
+		return &pb.CommitMessageFor2PCCommitResponse{Success: true}, nil
+	}
+
+	if isAborted {
+		n.Balances[wal.ClientID] = wal.OldValue
+	}
+
+	delete(n.WAL, txnTime)
+
+	return &pb.CommitMessageFor2PCCommitResponse{Success: true}, nil
 }
 
 // CommitMessage commits the request message executed by follower
@@ -708,6 +975,193 @@ func (s *NodeServer) ReadClientBalance(ctx context.Context, req *pb.ReadClientBa
 	return resp, nil
 }
 
+// ---------------------------------------2PC---------------------------------------------------------------
+func (s *NodeServer) GetClusterLeader(ctx context.Context, req *pb.GetClusterLeaderRequest) (*pb.GetClusterLeaderResponse, error) {
+	n := s.node
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
+
+	if n.IsLeader {
+		return &pb.GetClusterLeaderResponse{
+			IsLeader: true,
+			LeaderId: n.ID,
+		}, nil
+	}
+
+	return &pb.GetClusterLeaderResponse{
+		IsLeader: false,
+		LeaderId: n.CurrentLeaderID,
+	}, nil
+}
+
+func (s *NodeServer) Prepare2PC(ctx context.Context, req *pb.Prepare2PCRequest) (*pb.Prepare2PCResponse, error) {
+	n := s.node
+
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
+
+	orig := req.GetOriginalRequest()
+	tx := orig.GetTransaction()
+	receiver := tx.GetReciever()
+	amount := tx.GetAmount()
+
+	receiverClientID, err := strconv.Atoi(receiver)
+	if err != nil {
+		return &pb.Prepare2PCResponse{
+			Prepared: false,
+			Reason:   "invalid receiver client id",
+		}, nil
+	}
+
+	start, end := common.ShardRangeForNode(n.ID)
+	if int32(receiverClientID) < start || int32(receiverClientID) > end {
+		// This cluster does not own receiver; treat as not responsible
+		return &pb.Prepare2PCResponse{
+			Prepared: false,
+			Reason:   "not owner of receiver",
+		}, nil
+	}
+
+	n.mu.Lock()
+
+	if n.LockTable[receiver] {
+		n.mu.Unlock()
+		return &pb.Prepare2PCResponse{
+			Prepared: false,
+			Reason:   "receiver already locked",
+		}, nil
+	}
+
+	req1 := &pb.ClientRequestMessage{
+		MessageType:  orig.GetMessageType(),
+		Time:         orig.GetTime(),
+		ClientNumber: orig.GetClientNumber(),
+		Transaction: &pb.Transaction{
+			Sender:   common.SenderNotValid,
+			Reciever: receiver,
+			Amount:   amount,
+		},
+	}
+
+	params := &common.AdditionalParameteres{
+		Shard: common.ShardTypeCross,
+		Phase: common.PhasePrepare,
+	}
+
+	n.mu.Unlock()
+
+	n.ImplementPaxos(req1, params)
+
+	return &pb.Prepare2PCResponse{
+		Prepared: true,
+		Reason:   "",
+	}, nil
+}
+
+func (s *NodeServer) CommitOrAbort2PC(ctx context.Context, req *pb.CommitOrAbort2PCRequest) (*pb.CommitOrAbort2PCResponse, error) {
+	n := s.node
+
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
+
+	orig := req.GetOriginalRequest()
+	isCommit := req.GetCommit()
+
+	myCluster := common.ClusterOf(n.ID)
+
+	clusterNodes := make([]int32, 0)
+	for nodeID := range n.Peers {
+		if common.ClusterOf(nodeID) == myCluster {
+			clusterNodes = append(clusterNodes, nodeID)
+		}
+	}
+
+	quorum := n.majority()
+
+	var wgAccept sync.WaitGroup
+	wgAccept.Add(len(clusterNodes))
+
+	var ackCount int32
+
+	for _, nodeID := range clusterNodes {
+		addr := n.Peers[nodeID]
+
+		go func(nodeID int32, addr string) {
+			defer wgAccept.Done()
+
+			conn, err := grpc.NewClient(
+				addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			if err != nil {
+				return
+			}
+			node := pb.NewBankApplicationClient(conn)
+
+			_, err = node.AcceptMessageFor2PCCommit(ctx, &pb.AcceptMessageFor2PCCommitRequest{
+				OriginalRequest: orig,
+				Commit:          isCommit,
+			})
+			conn.Close()
+
+			if err != nil {
+				return
+			}
+
+			atomic.AddInt32(&ackCount, 1)
+		}(nodeID, addr)
+	}
+
+	wgAccept.Wait()
+
+	if int(ackCount) < quorum {
+		return &pb.CommitOrAbort2PCResponse{
+			Success: false,
+			Reason:  fmt.Sprintf("AcceptMessageFor2PCCommit quorum not reached (%d/%d)", ackCount, quorum),
+		}, nil
+	}
+
+	var wgCommit sync.WaitGroup
+	wgCommit.Add(len(clusterNodes))
+
+	for _, nodeID := range clusterNodes {
+		addr := n.Peers[nodeID]
+
+		go func(nodeID int32, addr string) {
+			defer wgCommit.Done()
+
+			conn, err := grpc.NewClient(
+				addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			if err != nil {
+				return
+			}
+			node := pb.NewBankApplicationClient(conn)
+
+			_, _ = node.CommitMessageFor2PCCommit(ctx, &pb.CommitMessageFor2PCCommitRequest{
+				OriginalRequest: orig,
+				Commit:          isCommit,
+			})
+			conn.Close()
+		}(nodeID, addr)
+	}
+
+	wgCommit.Wait()
+
+	return &pb.CommitOrAbort2PCResponse{
+		Success: true,
+		Reason:  "",
+	}, nil
+}
+
 // ------------------------------------CLIENT FUNCTIONS--------------------------------------------------------
 func (s *NodeServer) PrintBalance(ctx context.Context, req *pb.PrintBalanceRequest) (*pb.PrintBalanceResponse, error) {
 	balance := s.node.Balances[req.GetClientId()]
@@ -915,6 +1369,8 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 
 	n.lastPrepareSeen = time.Time{}
 	n.lastElectionStarted = time.Time{}
+	n.twoPCTimeout = 5 * time.Second
+	n.WAL = make(map[int32]*WALEntry)
 
 	n.LockTable = make(map[string]bool)
 
