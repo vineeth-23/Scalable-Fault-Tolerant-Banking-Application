@@ -38,9 +38,11 @@ type WALEntry struct {
 
 // Node represents a Paxos node
 type Node struct {
-	mu     sync.Mutex
-	randMu sync.Mutex
-	rng    *rand.Rand
+	mu            sync.Mutex
+	randMu        sync.Mutex
+	lastRepliesMu sync.RWMutex
+
+	rng *rand.Rand
 
 	ID      int32
 	Address string
@@ -137,7 +139,7 @@ func NewNode(id int32, address string, peers map[int32]string) *Node {
 	node.tpDuration = 500 * time.Millisecond
 
 	node.lastPrepareSeen = time.Now()
-	node.replyCond = sync.NewCond(&node.mu)
+	//node.replyCond = sync.NewCond(&node.mu)
 
 	myCluster := common.ClusterOf(id)
 	node.AliveClusterPeers = make(map[int32]string)

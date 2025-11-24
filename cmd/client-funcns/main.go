@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"time"
 
 	pb "bank-application/pb/bank-application/pb"
@@ -26,10 +27,18 @@ var peers = map[int32]string{
 	9: "localhost:50059",
 }
 
+const clientControlAddr = "localhost:6000"
+
 func PrintDB(nodeID int32) {
 	if nodeID == 0 {
-		for id, addr := range peers {
-			printSingleDB(id, addr)
+		nodeIDs := make([]int32, 0, len(peers))
+		for id := range peers {
+			nodeIDs = append(nodeIDs, id)
+		}
+		sort.Slice(nodeIDs, func(i, j int) bool { return nodeIDs[i] < nodeIDs[j] })
+
+		for _, id := range nodeIDs {
+			printSingleDB(id, peers[id])
 		}
 	} else {
 		addr, ok := peers[nodeID]
@@ -50,18 +59,29 @@ func printSingleDB(nodeID int32, addr string) {
 	}
 	defer conn.Close()
 
-	client := pb.NewBankApplicationClient(conn)
+	node := pb.NewBankApplicationClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	resp, err := client.GetDB(ctx, &pb.DBRequest{})
+	resp, err := node.GetDB(ctx, &pb.DBRequest{})
 	if err != nil {
 		return
 	}
 
 	fmt.Printf("\n[Node %d DB]\n", resp.NodeId)
-	for acc, bal := range resp.Balances {
-		fmt.Printf("  %s: %d\n", acc, bal)
+
+	accounts := make([]string, 0, len(resp.Balances))
+	for acc := range resp.Balances {
+		accounts = append(accounts, acc)
+	}
+	sort.Slice(accounts, func(i, j int) bool {
+		ai, _ := strconv.Atoi(accounts[i])
+		aj, _ := strconv.Atoi(accounts[j])
+		return ai < aj
+	})
+
+	for _, acc := range accounts {
+		fmt.Printf("  %s: %d\n", acc, resp.Balances[acc])
 	}
 }
 
@@ -280,6 +300,39 @@ func GetClusterForClient(clientID int32) []int32 {
 	}
 }
 
+func PrintReshard() {
+	conn, err := grpc.NewClient(
+		clientControlAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Printf("failed to connect to client-control server at %s: %v", clientControlAddr, err)
+		return
+	}
+	defer conn.Close()
+
+	ctrl := pb.NewClientControlClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := ctrl.GetReshardPlan(ctx, &pb.GetReshardPlanRequest{})
+	if err != nil {
+		log.Printf("GetReshardPlan RPC failed: %v", err)
+		return
+	}
+
+	if len(resp.Moves) == 0 {
+		fmt.Println("[Reshard] No moves suggested")
+		return
+	}
+
+	fmt.Println("[Reshard] Suggested data movements:")
+	for _, m := range resp.Moves {
+		fmt.Printf("(%d,c%d,c%d)\n", m.Account, m.FromCluster, m.ToCluster)
+	}
+}
+
 func main() {
 	mode := flag.String("mode", "db", "mode: db | log | status | view")
 	nodeID := flag.Int("node", 0, "node ID (0 for all)")
@@ -302,6 +355,9 @@ func main() {
 
 	case "balances":
 		PrintBalances(int32(*clientID))
+
+	case "reshard":
+		PrintReshard()
 
 	default:
 		log.Fatalf("Unknown mode: %s", *mode)

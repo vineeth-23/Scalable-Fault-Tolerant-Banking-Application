@@ -2389,7 +2389,7 @@ func (x *Prepare2PCResponse) GetReason() string {
 type CommitOrAbort2PCRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	OriginalRequest *ClientRequestMessage  `protobuf:"bytes,1,opt,name=original_request,json=originalRequest,proto3" json:"original_request,omitempty"`
-	Commit          bool                   `protobuf:"varint,2,opt,name=commit,proto3" json:"commit,omitempty"`
+	Commit          bool                   `protobuf:"varint,2,opt,name=commit,proto3" json:"commit,omitempty"` // if true: then commit,else: abort
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }

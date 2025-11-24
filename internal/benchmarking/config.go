@@ -1,0 +1,55 @@
+package benchmarking
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"math"
+)
+
+type BenchmarkConfig struct {
+	DurationSec int     // total run time in seconds
+	Concurrency int     // number of worker goroutines
+	ReadOnly    float64 // fraction of READ-only operations
+	IntraShard  float64 // fraction of intra-shard WRITE operations
+	CrossShard  float64 // fraction of cross-shard WRITE operations
+	Skew        float64 // 0 = uniform, 1 = all hotkeys
+}
+
+func ParseFlags() BenchmarkConfig {
+	duration := flag.Int("duration", 10, "benchmark duration in seconds")
+	concurrency := flag.Int("concurrency", 5, "number of concurrent workers")
+
+	readOnly := flag.Float64("read-only", 0.7, "fraction of read-only transactions")
+	intra := flag.Float64("intra-shard", 0.2, "fraction of intra-shard write transactions")
+	cross := flag.Float64("cross-shard", 0.1, "fraction of cross-shard write transactions")
+
+	skew := flag.Float64("skew", 0.0, "skew for key popularity: 0 = uniform, 1 = all hotkeys")
+
+	flag.Parse()
+
+	sum := *readOnly + *intra + *cross
+	if math.Abs(sum-1.0) > 1e-6 {
+		log.Fatalf("read-only + intra-shard + cross-shard MUST equal 1. got %.4f", sum)
+	}
+
+	if *skew < 0 || *skew > 1 {
+		log.Fatalf("skew must be in [0,1], got %.3f", *skew)
+	}
+
+	cfg := BenchmarkConfig{
+		DurationSec: *duration,
+		Concurrency: *concurrency,
+		ReadOnly:    *readOnly,
+		IntraShard:  *intra,
+		CrossShard:  *cross,
+		Skew:        *skew,
+	}
+
+	fmt.Printf(
+		"[Benchmark Config] duration=%ds conc=%d read-only=%.2f intra=%.2f cross=%.2f skew=%.2f\n",
+		cfg.DurationSec, cfg.Concurrency, cfg.ReadOnly, cfg.IntraShard, cfg.CrossShard, cfg.Skew,
+	)
+
+	return cfg
+}

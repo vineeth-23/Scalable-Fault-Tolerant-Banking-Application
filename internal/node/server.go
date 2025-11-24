@@ -7,6 +7,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -156,7 +157,11 @@ func (s *NodeServer) handleIntraShardTransaction(
 
 	deadline, hasDeadline := ctx.Deadline()
 	for {
-		if resp, ok := s.node.LastReplies[key]; ok {
+		s.node.lastRepliesMu.RLock()
+		resp, ok := s.node.LastReplies[key]
+		s.node.lastRepliesMu.RUnlock()
+
+		if ok {
 			s.node.mu.Lock()
 			s.node.unlockIntraShard(sender, receiver)
 			s.node.mu.Unlock()
@@ -177,7 +182,7 @@ func (s *NodeServer) handleIntraShardTransaction(
 			return nil, status.Error(codes.DeadlineExceeded, "commit still pending")
 		}
 
-		s.node.replyCond.Wait()
+		//s.node.replyCond.Wait()
 	}
 }
 
@@ -1263,17 +1268,52 @@ func (s *NodeServer) GetStatus(ctx context.Context, req *pb.StatusRequest) (*pb.
 }
 
 func (s *NodeServer) GetDB(ctx context.Context, req *pb.DBRequest) (*pb.DBResponse, error) {
-	//if !s.node.isAlive {
-	//	//log.Printf("[Node %d] Rejecting GetDB (node dead)", s.node.ID)
-	//	return nil, status.Error(codes.Unavailable, "node is not alive")
-	//}
-
 	s.node.mu.Lock()
 	defer s.node.mu.Unlock()
 
+	n := s.node
+
+	modified := make(map[string]struct{})
+
+	for key := range n.LastReplies {
+		parts := strings.Split(key, "-")
+		if len(parts) < 5 {
+			continue
+		}
+
+		sender := parts[2]
+		receiver := parts[3]
+
+		isValidID := func(id string) bool {
+			if id == "" {
+				return false
+			}
+			switch id {
+			case "noop", "SENDER_NOT_VALID", "RECEIVER_NOT_VALID":
+				return false
+			default:
+				return true
+			}
+		}
+
+		if isValidID(sender) {
+			modified[sender] = struct{}{}
+		}
+		if isValidID(receiver) {
+			modified[receiver] = struct{}{}
+		}
+	}
+
+	filtered := make(map[string]int32, len(modified))
+	for id := range modified {
+		if bal, ok := n.Balances[id]; ok {
+			filtered[id] = bal
+		}
+	}
+
 	return &pb.DBResponse{
-		NodeId:   s.node.ID,
-		Balances: s.node.Balances,
+		NodeId:   n.ID,
+		Balances: filtered,
 	}, nil
 }
 

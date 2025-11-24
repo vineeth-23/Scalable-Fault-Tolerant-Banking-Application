@@ -15,7 +15,7 @@ import (
 
 // ClientManager orchestrates all clients
 type ClientManager struct {
-	clients        map[string]*Client
+	Clients        map[string]*Client
 	clusterLeaders map[int]string
 	mu             sync.RWMutex
 	peers          map[int32]string
@@ -25,11 +25,13 @@ type ClientManager struct {
 	retryQueue    []*Txn
 	retryMu       sync.Mutex
 	maxRetryCount int
+
+	AllExecutedTransferTransactions []*Txn
 }
 
 func NewClientManager(peers map[int32]string) *ClientManager {
 	cm := &ClientManager{
-		clients:       make(map[string]*Client, 9000),
+		Clients:       make(map[string]*Client, 9000),
 		peers:         peers,
 		globalTime:    0,
 		retryQueue:    []*Txn{},
@@ -39,6 +41,7 @@ func NewClientManager(peers map[int32]string) *ClientManager {
 			2: peers[4],
 			3: peers[7],
 		},
+		AllExecutedTransferTransactions: []*Txn{},
 	}
 
 	for i := 1; i <= 9000; i++ {
@@ -56,7 +59,7 @@ func NewClientManager(peers map[int32]string) *ClientManager {
 		}
 		c.doneCh <- struct{}{}
 
-		cm.clients[clientID] = c
+		cm.Clients[clientID] = c
 	}
 
 	return cm
@@ -70,7 +73,9 @@ func (cm *ClientManager) Reset() {
 
 	cm.retryQueue = []*Txn{}
 
-	cm.clients = make(map[string]*Client, 9000)
+	cm.Clients = make(map[string]*Client, 9000)
+
+	cm.AllExecutedTransferTransactions = []*Txn{}
 
 	for i := 1; i <= 9000; i++ {
 		clientID := strconv.Itoa(i)
@@ -87,7 +92,7 @@ func (cm *ClientManager) Reset() {
 		}
 		c.doneCh <- struct{}{}
 
-		cm.clients[clientID] = c
+		cm.Clients[clientID] = c
 	}
 }
 
@@ -184,40 +189,87 @@ func (cm *ClientManager) DrainRetryQueue() []*Txn {
 //}
 
 func (cm *ClientManager) RunSet(txns []*Txn) {
-	//var wg sync.WaitGroup
+	i := 0
+	n := len(txns)
 
-	for _, tx := range txns {
-		//wg.Add(1)
+	for i < n {
+		var wg sync.WaitGroup
 
-		//go func(tx *Txn) {
-		//	defer wg.Done()
+		for i < n && txns[i].Command.Type != CommandTypeFail && txns[i].Command.Type != CommandTypeRecover {
+			tx := txns[i]
+			wg.Add(1)
 
-		switch tx.Command.Type {
-		case CommandTypeTransfer:
-			client, ok := cm.clients[tx.Sender]
-			if !ok {
-				return
-			}
-			client.SendTransaction(tx, cm.peers)
+			go func(tx *Txn) {
+				defer wg.Done()
 
-		case CommandTypeRead:
-			client, ok := cm.clients[tx.Sender]
-			if !ok {
-				return
-			}
-			client.SendRead(tx, cm.peers)
+				switch tx.Command.Type {
+				case CommandTypeTransfer:
+					client, ok := cm.Clients[tx.Sender]
+					if !ok {
+						return
+					}
+					client.SendTransaction(tx, cm.peers)
 
-		case CommandTypeFail, CommandTypeRecover:
-			cm.UpdateNodeStatus(tx)
+				case CommandTypeRead:
+					client, ok := cm.Clients[tx.Sender]
+					if !ok {
+						return
+					}
+					client.SendRead(tx, cm.peers)
 
-		default:
-			log.Printf("!!Came into Default Mode. Should Not happen!!")
+				default:
+					log.Printf("[RunSet] Unexpected non-F/R command type in concurrent block: %+v", tx.Command.Type)
+				}
+			}(tx)
+
+			i++
 		}
-		//}(tx)
-	}
 
-	//wg.Wait()
+		wg.Wait()
+
+		if i < n && (txns[i].Command.Type == CommandTypeFail || txns[i].Command.Type == CommandTypeRecover) {
+			tx := txns[i]
+			cm.UpdateNodeStatus(tx)
+			i++
+		}
+	}
 }
+
+//func (cm *ClientManager) RunSet(txns []*Txn) {
+//	//var wg sync.WaitGroup
+//
+//	for _, tx := range txns {
+//		//wg.Add(1)
+//
+//		//go func(tx *Txn) {
+//		//	defer wg.Done()
+//
+//		switch tx.Command.Type {
+//		case CommandTypeTransfer:
+//			client, ok := cm.clients[tx.Sender]
+//			if !ok {
+//				return
+//			}
+//			client.SendTransaction(tx, cm.peers)
+//
+//		case CommandTypeRead:
+//			client, ok := cm.clients[tx.Sender]
+//			if !ok {
+//				return
+//			}
+//			client.SendRead(tx, cm.peers)
+//
+//		case CommandTypeFail, CommandTypeRecover:
+//			cm.UpdateNodeStatus(tx)
+//
+//		default:
+//			log.Printf("!!Came into Default Mode. Should Not happen!!")
+//		}
+//		//}(tx)
+//	}
+//
+//	//wg.Wait()
+//}
 
 func (cm *ClientManager) UpdateNodeStatus(tx *Txn) {
 	nodeID := tx.Command.NodeID

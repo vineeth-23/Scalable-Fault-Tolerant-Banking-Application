@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package banking;
+
+option go_package = "pb/bank-application/pb";
+
+message ReshardMove {
+  int32 account      = 1;
+  int32 from_cluster = 2;
+  int32 to_cluster   = 3;
+}
+
+message GetReshardPlanRequest {}
+
+message GetReshardPlanResponse {
+  repeated ReshardMove moves = 1;
+}
+
+service ClientControl {
+  rpc GetReshardPlan(GetReshardPlanRequest) returns (GetReshardPlanResponse);
+}

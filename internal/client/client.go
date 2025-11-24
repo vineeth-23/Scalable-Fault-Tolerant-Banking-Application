@@ -25,7 +25,7 @@ const (
 	maxRetries = 4
 )
 
-func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
+func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 	<-c.doneCh
 	defer func() { c.doneCh <- struct{}{} }()
 
@@ -44,7 +44,9 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
 			if ok {
 				log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) executed via cluster leader %s (attempt %d)",
 					c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, leaderAddr, attempt)
-				return
+				//log.Printf("Length of AllExecutedTransferTransactions is %d", len(c.manager.AllExecutedTransferTransactions))
+				c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+				return true
 			}
 		}
 
@@ -56,7 +58,8 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
 			if ok {
 				log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) executed via rootNode %s (attempt %d)",
 					c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, rootAddr, attempt)
-				return
+				c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+				return true
 			}
 		}
 
@@ -72,6 +75,7 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
 					case successCh <- struct{}{}:
 						log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) executed via multicast at %s (attempt %d)",
 							c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, addr, attempt)
+						c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
 						cancel2()
 					default:
 					}
@@ -82,7 +86,7 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
 		select {
 		case <-successCh:
 			cancel2()
-			return
+			return true
 
 		case <-ctx2.Done():
 			cancel2()
@@ -96,9 +100,10 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) {
 
 	log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) TIMED OUT (no peer in cluster responded after %d attempts)",
 		c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, 4)
+	return false
 }
 
-func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) {
+func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 	<-c.doneCh
 	defer func() { c.doneCh <- struct{}{} }()
 
@@ -110,7 +115,7 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) {
 		ok := c.handleReadRPC(ctx, leaderAddr, tx)
 		cancel()
 		if ok {
-			return
+			return true
 		}
 	}
 
@@ -122,7 +127,7 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) {
 	ok := c.handleReadRPC(ctx, rootAddr, tx)
 	cancel()
 	if ok {
-		return
+		return true
 	}
 
 	ctx2, cancel2 := context.WithTimeout(context.Background(), c.timeout)
@@ -148,6 +153,7 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) {
 		// failed
 	}
 	cancel2()
+	return false
 }
 
 func (c *Client) handleClientRequest(ctx context.Context, addr string, tx *Txn) bool {

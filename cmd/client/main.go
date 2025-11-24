@@ -3,9 +3,12 @@ package main
 import (
 	"bank-application/internal/client"
 	"bank-application/pb/bank-application/pb"
+
 	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"sort"
 	"strconv"
@@ -16,6 +19,25 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+func startClientControlServer(cm *client.ClientManager) {
+	//lis, err := net.Listen("tcp", ":6000")
+	lis, _ := net.Listen("tcp", "127.0.0.1:6000")
+
+	//if err != nil {
+	//	log.Printf("[ClientControl] failed to listen: %v", err)
+	//	return
+	//}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterClientControlServer(grpcServer, client.NewClientControlServer(cm))
+
+	log.Println("[ClientControl] gRPC server listening on :6000")
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Printf("[ClientControl] serve error: %v", err)
+	}
+}
 
 func main() {
 	sets := client.ParseCSV("C:/Users/skotha/Downloads/Proj-3_TC.csv")
@@ -33,6 +55,8 @@ func main() {
 	}
 
 	cm := client.NewClientManager(peers)
+
+	go startClientControlServer(cm)
 
 	keys := make([]int, 0, len(sets))
 	for k := range sets {
@@ -95,4 +119,6 @@ func main() {
 
 		cm.RunSet(set.Transactions)
 	}
+	fmt.Println("\nAll sets completed. Press ENTER to stop the client server...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

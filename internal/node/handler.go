@@ -296,7 +296,7 @@ func (n *Node) BroadcastCommit(seq int64, ballotNumber *BallotNumber, req *pb.Cl
 
 func (n *Node) executeInOrder() {
 	n.mu.Lock()
-	defer n.mu.Unlock()
+	//defer n.mu.Unlock()
 
 	for {
 		//log.Printf("Last executed sequence number for node %d is %d", n.ID, n.LastExecutedSequenceNumber)
@@ -316,6 +316,7 @@ func (n *Node) executeInOrder() {
 					)
 				}
 			}
+			n.mu.Unlock()
 			//log.Println(s)
 			break // stop if next not ready
 		}
@@ -362,9 +363,11 @@ func (n *Node) executeInOrder() {
 			Result:       isSuccess,
 		}
 
+		n.lastRepliesMu.Lock()
 		n.LastReplies[key] = resp
+		n.lastRepliesMu.Unlock()
 
-		n.replyCond.Broadcast()
+		//n.replyCond.Broadcast()
 
 		//log.Printf("[Leader %d] ==== LOCAL LOG STATE At executeInOrder func ====", n.ID)
 		//for s, entry1 := range n.SequenceNumberToLogEntry {
