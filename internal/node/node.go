@@ -2,6 +2,7 @@ package node
 
 import (
 	"bank-application/internal/common"
+	"bank-application/internal/database"
 	"context"
 	"log"
 	"math/rand"
@@ -29,12 +30,12 @@ type LogEntry struct {
 	Status         string
 }
 
-type WALEntry struct {
-	TxnTime  int32
-	ClientID string
-	OldValue int32
-	NewValue int32
-}
+//type WALEntry struct {
+//	TxnTime  int32
+//	ClientID string
+//	OldValue int32
+//	NewValue int32
+//}
 
 // Node represents a Paxos node
 type Node struct {
@@ -96,7 +97,7 @@ type Node struct {
 	LockTable         map[string]bool
 	twoPCTimeout      time.Duration
 	AliveClusterPeers map[int32]string // nodeID -> address (all peers which belongs to same cluster)
-	WAL               map[int32]*WALEntry
+	WAL               map[int32]*common.WALEntry
 }
 
 func NewNode(id int32, address string, peers map[int32]string) *Node {
@@ -105,6 +106,14 @@ func NewNode(id int32, address string, peers map[int32]string) *Node {
 	for acc := start; acc <= end; acc++ {
 		key := strconv.Itoa(int(acc))
 		balances[key] = 10
+	}
+	for acc := start; acc <= end; acc++ {
+		clientID := strconv.Itoa(int(acc))
+		err := database.UpdateClientBalance(id, clientID, 10)
+		if err != nil {
+			log.Printf("[Node %d] Failed to reset Redis balance for node=%d client=%s: %v",
+				id, id, clientID, err)
+		}
 	}
 
 	node := &Node{
@@ -126,7 +135,7 @@ func NewNode(id int32, address string, peers map[int32]string) *Node {
 		isAlive:      true,
 		LockTable:    make(map[string]bool),
 		twoPCTimeout: 5 * time.Second,
-		WAL:          make(map[int32]*WALEntry),
+		WAL:          make(map[int32]*common.WALEntry),
 	}
 
 	seed := time.Now().UnixNano() + int64(id)*1000003
@@ -807,7 +816,7 @@ func (n *Node) broadcastNewView(ballot *BallotNumber, mergedLog []*pb.AcceptLogE
 			if entry, ok := n.SequenceNumberToLogEntry[seq]; ok {
 				//if entry.Status != "EXECUTED" {
 				n.mu.Unlock()
-				n.BroadcastCommit(int64(seq), ballot, entry.Request)
+				n.BroadcastCommit(int64(seq), ballot, entry.Request, nil)
 			} else {
 				n.mu.Unlock()
 				//log.Printf("[Leader %d] Seq=%d missing in leader log → should not happen", n.ID, seq)

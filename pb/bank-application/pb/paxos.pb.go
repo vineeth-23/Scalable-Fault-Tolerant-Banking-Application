@@ -615,14 +615,15 @@ func (x *AcceptMessageResponse) GetNodeNumber() int32 {
 }
 
 type CommitMessageRequest struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	MessageType          MessageType            `protobuf:"varint,1,opt,name=message_type,json=messageType,proto3,enum=banking.MessageType" json:"message_type,omitempty"`
-	BallotNumber         *BallotNumber          `protobuf:"bytes,2,opt,name=ballot_number,json=ballotNumber,proto3" json:"ballot_number,omitempty"`
-	SequenceNumber       int32                  `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
-	Transaction          *Transaction           `protobuf:"bytes,4,opt,name=transaction,proto3" json:"transaction,omitempty"`
-	ClientRequestMessage *ClientRequestMessage  `protobuf:"bytes,5,opt,name=client_request_message,json=clientRequestMessage,proto3" json:"client_request_message,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                        protoimpl.MessageState       `protogen:"open.v1"`
+	MessageType                  MessageType                  `protobuf:"varint,1,opt,name=message_type,json=messageType,proto3,enum=banking.MessageType" json:"message_type,omitempty"`
+	BallotNumber                 *BallotNumber                `protobuf:"bytes,2,opt,name=ballot_number,json=ballotNumber,proto3" json:"ballot_number,omitempty"`
+	SequenceNumber               int32                        `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
+	Transaction                  *Transaction                 `protobuf:"bytes,4,opt,name=transaction,proto3" json:"transaction,omitempty"`
+	ClientRequestMessage         *ClientRequestMessage        `protobuf:"bytes,5,opt,name=client_request_message,json=clientRequestMessage,proto3" json:"client_request_message,omitempty"`
+	AdditionalParameteresFor_2Pc *AdditionalParameteresFor2PC `protobuf:"bytes,6,opt,name=additional_parameteres_for_2pc,json=additionalParameteresFor2pc,proto3" json:"additional_parameteres_for_2pc,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *CommitMessageRequest) Reset() {
@@ -686,6 +687,13 @@ func (x *CommitMessageRequest) GetTransaction() *Transaction {
 func (x *CommitMessageRequest) GetClientRequestMessage() *ClientRequestMessage {
 	if x != nil {
 		return x.ClientRequestMessage
+	}
+	return nil
+}
+
+func (x *CommitMessageRequest) GetAdditionalParameteresFor_2Pc() *AdditionalParameteresFor2PC {
+	if x != nil {
+		return x.AdditionalParameteresFor_2Pc
 	}
 	return nil
 }
@@ -2728,13 +2736,14 @@ const file_proto_paxos_proto_rawDesc = "" +
 	"\x0fsequence_number\x18\x03 \x01(\x05R\x0esequenceNumber\x126\n" +
 	"\vtransaction\x18\x04 \x01(\v2\x14.banking.TransactionR\vtransaction\x12\x1f\n" +
 	"\vnode_number\x18\x05 \x01(\x05R\n" +
-	"nodeNumber\"\xc1\x02\n" +
+	"nodeNumber\"\xac\x03\n" +
 	"\x14CommitMessageRequest\x127\n" +
 	"\fmessage_type\x18\x01 \x01(\x0e2\x14.banking.MessageTypeR\vmessageType\x12:\n" +
 	"\rballot_number\x18\x02 \x01(\v2\x15.banking.BallotNumberR\fballotNumber\x12'\n" +
 	"\x0fsequence_number\x18\x03 \x01(\x05R\x0esequenceNumber\x126\n" +
 	"\vtransaction\x18\x04 \x01(\v2\x14.banking.TransactionR\vtransaction\x12S\n" +
-	"\x16client_request_message\x18\x05 \x01(\v2\x1d.banking.ClientRequestMessageR\x14clientRequestMessage\"\xb5\x01\n" +
+	"\x16client_request_message\x18\x05 \x01(\v2\x1d.banking.ClientRequestMessageR\x14clientRequestMessage\x12i\n" +
+	"\x1eadditional_parameteres_for_2pc\x18\x06 \x01(\v2$.banking.AdditionalParameteresFor2PCR\x1badditionalParameteresFor2pc\"\xb5\x01\n" +
 	"\x15CommitMessageResponse\x127\n" +
 	"\fmessage_type\x18\x01 \x01(\x0e2\x14.banking.MessageTypeR\vmessageType\x12:\n" +
 	"\rballot_number\x18\x02 \x01(\v2\x15.banking.BallotNumberR\fballotNumber\x12'\n" +
@@ -2973,83 +2982,84 @@ var file_proto_paxos_proto_depIdxs = []int32{
 	2,  // 14: banking.CommitMessageRequest.ballot_number:type_name -> banking.BallotNumber
 	1,  // 15: banking.CommitMessageRequest.transaction:type_name -> banking.Transaction
 	3,  // 16: banking.CommitMessageRequest.client_request_message:type_name -> banking.ClientRequestMessage
-	0,  // 17: banking.CommitMessageResponse.message_type:type_name -> banking.MessageType
-	2,  // 18: banking.CommitMessageResponse.ballot_number:type_name -> banking.BallotNumber
-	3,  // 19: banking.StatusResponse.client_request_message:type_name -> banking.ClientRequestMessage
-	52, // 20: banking.DBResponse.balances:type_name -> banking.DBResponse.BalancesEntry
-	2,  // 21: banking.LogEntryMessage.ballot_number:type_name -> banking.BallotNumber
-	3,  // 22: banking.LogEntryMessage.client_request:type_name -> banking.ClientRequestMessage
-	16, // 23: banking.LogResponse.entries:type_name -> banking.LogEntryMessage
-	2,  // 24: banking.AcceptLogEntry.ballot_number:type_name -> banking.BallotNumber
-	3,  // 25: banking.AcceptLogEntry.accept_value:type_name -> banking.ClientRequestMessage
-	2,  // 26: banking.PrepareMessage.ballot_number:type_name -> banking.BallotNumber
-	2,  // 27: banking.PromiseMessage.ballot_number:type_name -> banking.BallotNumber
-	18, // 28: banking.PromiseMessage.accept_log:type_name -> banking.AcceptLogEntry
-	2,  // 29: banking.NewViewRequest.ballot_number:type_name -> banking.BallotNumber
-	18, // 30: banking.NewViewRequest.accept_log:type_name -> banking.AcceptLogEntry
-	8,  // 31: banking.NewViewResponse.accept_message_response:type_name -> banking.AcceptMessageResponse
-	2,  // 32: banking.HeartbeatRequest.ballot_number:type_name -> banking.BallotNumber
-	21, // 33: banking.PrintViewResponse.new_view_request:type_name -> banking.NewViewRequest
-	16, // 34: banking.PrintLogResponse.log_entry_message:type_name -> banking.LogEntryMessage
-	18, // 35: banking.ActiveCatchUpRequest.accept_log_entries:type_name -> banking.AcceptLogEntry
-	18, // 36: banking.GetLeaderLogResponse.accept_log_entries:type_name -> banking.AcceptLogEntry
-	3,  // 37: banking.Prepare2PCRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 38: banking.CommitOrAbort2PCRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 39: banking.AcceptMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 40: banking.CommitMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
-	7,  // 41: banking.BankApplication.AcceptMessage:input_type -> banking.AcceptMessageRequest
-	9,  // 42: banking.BankApplication.CommitMessage:input_type -> banking.CommitMessageRequest
-	19, // 43: banking.BankApplication.Prepare:input_type -> banking.PrepareMessage
-	20, // 44: banking.BankApplication.Promise:input_type -> banking.PromiseMessage
-	21, // 45: banking.BankApplication.NewView:input_type -> banking.NewViewRequest
-	23, // 46: banking.BankApplication.Heartbeat:input_type -> banking.HeartbeatRequest
-	25, // 47: banking.BankApplication.UpdateNodeStatus:input_type -> banking.AliveRequest
-	29, // 48: banking.BankApplication.FailCurrentLeader:input_type -> banking.FailCurrentLeaderRequest
-	3,  // 49: banking.BankApplication.HandleClientRequest:input_type -> banking.ClientRequestMessage
-	11, // 50: banking.BankApplication.GetStatus:input_type -> banking.StatusRequest
-	13, // 51: banking.BankApplication.GetDB:input_type -> banking.DBRequest
-	15, // 52: banking.BankApplication.GetLog:input_type -> banking.LogRequest
-	27, // 53: banking.BankApplication.PrintView:input_type -> banking.PrintViewRequest
-	31, // 54: banking.BankApplication.PrintLog:input_type -> banking.PrintLogRequest
-	38, // 55: banking.BankApplication.PrintBalance:input_type -> banking.PrintBalanceRequest
-	33, // 56: banking.BankApplication.PerformActiveCatchUpAsFollower:input_type -> banking.ActiveCatchUpRequest
-	40, // 57: banking.BankApplication.GetLeaderLogForActiveCatching:input_type -> banking.GetLeaderLogRequest
-	35, // 58: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:input_type -> banking.FlushAndUpdateStatusRequest
-	36, // 59: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
-	42, // 60: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
-	44, // 61: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
-	46, // 62: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
-	48, // 63: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
-	50, // 64: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
-	8,  // 65: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
-	10, // 66: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
-	53, // 67: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
-	53, // 68: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
-	22, // 69: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
-	24, // 70: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
-	26, // 71: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
-	30, // 72: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
-	5,  // 73: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
-	12, // 74: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
-	14, // 75: banking.BankApplication.GetDB:output_type -> banking.DBResponse
-	17, // 76: banking.BankApplication.GetLog:output_type -> banking.LogResponse
-	28, // 77: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
-	32, // 78: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
-	39, // 79: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
-	34, // 80: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
-	41, // 81: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
-	53, // 82: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
-	37, // 83: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
-	43, // 84: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
-	45, // 85: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
-	47, // 86: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
-	49, // 87: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
-	51, // 88: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
-	65, // [65:89] is the sub-list for method output_type
-	41, // [41:65] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	6,  // 17: banking.CommitMessageRequest.additional_parameteres_for_2pc:type_name -> banking.AdditionalParameteresFor2PC
+	0,  // 18: banking.CommitMessageResponse.message_type:type_name -> banking.MessageType
+	2,  // 19: banking.CommitMessageResponse.ballot_number:type_name -> banking.BallotNumber
+	3,  // 20: banking.StatusResponse.client_request_message:type_name -> banking.ClientRequestMessage
+	52, // 21: banking.DBResponse.balances:type_name -> banking.DBResponse.BalancesEntry
+	2,  // 22: banking.LogEntryMessage.ballot_number:type_name -> banking.BallotNumber
+	3,  // 23: banking.LogEntryMessage.client_request:type_name -> banking.ClientRequestMessage
+	16, // 24: banking.LogResponse.entries:type_name -> banking.LogEntryMessage
+	2,  // 25: banking.AcceptLogEntry.ballot_number:type_name -> banking.BallotNumber
+	3,  // 26: banking.AcceptLogEntry.accept_value:type_name -> banking.ClientRequestMessage
+	2,  // 27: banking.PrepareMessage.ballot_number:type_name -> banking.BallotNumber
+	2,  // 28: banking.PromiseMessage.ballot_number:type_name -> banking.BallotNumber
+	18, // 29: banking.PromiseMessage.accept_log:type_name -> banking.AcceptLogEntry
+	2,  // 30: banking.NewViewRequest.ballot_number:type_name -> banking.BallotNumber
+	18, // 31: banking.NewViewRequest.accept_log:type_name -> banking.AcceptLogEntry
+	8,  // 32: banking.NewViewResponse.accept_message_response:type_name -> banking.AcceptMessageResponse
+	2,  // 33: banking.HeartbeatRequest.ballot_number:type_name -> banking.BallotNumber
+	21, // 34: banking.PrintViewResponse.new_view_request:type_name -> banking.NewViewRequest
+	16, // 35: banking.PrintLogResponse.log_entry_message:type_name -> banking.LogEntryMessage
+	18, // 36: banking.ActiveCatchUpRequest.accept_log_entries:type_name -> banking.AcceptLogEntry
+	18, // 37: banking.GetLeaderLogResponse.accept_log_entries:type_name -> banking.AcceptLogEntry
+	3,  // 38: banking.Prepare2PCRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 39: banking.CommitOrAbort2PCRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 40: banking.AcceptMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 41: banking.CommitMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
+	7,  // 42: banking.BankApplication.AcceptMessage:input_type -> banking.AcceptMessageRequest
+	9,  // 43: banking.BankApplication.CommitMessage:input_type -> banking.CommitMessageRequest
+	19, // 44: banking.BankApplication.Prepare:input_type -> banking.PrepareMessage
+	20, // 45: banking.BankApplication.Promise:input_type -> banking.PromiseMessage
+	21, // 46: banking.BankApplication.NewView:input_type -> banking.NewViewRequest
+	23, // 47: banking.BankApplication.Heartbeat:input_type -> banking.HeartbeatRequest
+	25, // 48: banking.BankApplication.UpdateNodeStatus:input_type -> banking.AliveRequest
+	29, // 49: banking.BankApplication.FailCurrentLeader:input_type -> banking.FailCurrentLeaderRequest
+	3,  // 50: banking.BankApplication.HandleClientRequest:input_type -> banking.ClientRequestMessage
+	11, // 51: banking.BankApplication.GetStatus:input_type -> banking.StatusRequest
+	13, // 52: banking.BankApplication.GetDB:input_type -> banking.DBRequest
+	15, // 53: banking.BankApplication.GetLog:input_type -> banking.LogRequest
+	27, // 54: banking.BankApplication.PrintView:input_type -> banking.PrintViewRequest
+	31, // 55: banking.BankApplication.PrintLog:input_type -> banking.PrintLogRequest
+	38, // 56: banking.BankApplication.PrintBalance:input_type -> banking.PrintBalanceRequest
+	33, // 57: banking.BankApplication.PerformActiveCatchUpAsFollower:input_type -> banking.ActiveCatchUpRequest
+	40, // 58: banking.BankApplication.GetLeaderLogForActiveCatching:input_type -> banking.GetLeaderLogRequest
+	35, // 59: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:input_type -> banking.FlushAndUpdateStatusRequest
+	36, // 60: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
+	42, // 61: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
+	44, // 62: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
+	46, // 63: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
+	48, // 64: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
+	50, // 65: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
+	8,  // 66: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
+	10, // 67: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
+	53, // 68: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
+	53, // 69: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
+	22, // 70: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
+	24, // 71: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
+	26, // 72: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
+	30, // 73: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
+	5,  // 74: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
+	12, // 75: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
+	14, // 76: banking.BankApplication.GetDB:output_type -> banking.DBResponse
+	17, // 77: banking.BankApplication.GetLog:output_type -> banking.LogResponse
+	28, // 78: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
+	32, // 79: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
+	39, // 80: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
+	34, // 81: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
+	41, // 82: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
+	53, // 83: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
+	37, // 84: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
+	43, // 85: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
+	45, // 86: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
+	47, // 87: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
+	49, // 88: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
+	51, // 89: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
+	66, // [66:90] is the sub-list for method output_type
+	42, // [42:66] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_proto_paxos_proto_init() }

@@ -1,10 +1,11 @@
 package client
 
 import (
-	"log"
 	"sort"
 	"strconv"
 )
+
+// reshard.go (client package)
 
 const (
 	totalAccounts  = 9000
@@ -19,20 +20,34 @@ type ReshardMove struct {
 	ToCluster   int
 }
 
+// ComputeReshardMoves builds a weighted graph of account interactions from
+// AllExecutedTransferTransactions and then greedily moves accounts between
+// clusters to reduce the global cross-shard cut, subject to size bounds.
 func (cm *ClientManager) ComputeReshardMoves() []ReshardMove {
-	// 1) Build interaction counts: inter[account][cluster] = interaction count
-	inter := make(map[int][numClusters + 1]int)
+	// 1) Build adjacency: adj[u][v] = weight of transfers between u and v
+	adj := make(map[int]map[int]int)
 
-	log.Printf("Length of AllExecutedTransferTransactions is: %d", len(cm.AllExecutedTransferTransactions))
+	addEdge := func(a, b int) {
+		if a == b {
+			return
+		}
+		if adj[a] == nil {
+			adj[a] = make(map[int]int)
+		}
+		if adj[b] == nil {
+			adj[b] = make(map[int]int)
+		}
+		adj[a][b]++
+		adj[b][a]++
+	}
+
 	for _, tx := range cm.AllExecutedTransferTransactions {
 		if tx == nil {
 			continue
 		}
-
 		if tx.Sender == "" || tx.Reciever == "" {
 			continue
 		}
-
 		sid, err1 := strconv.Atoi(tx.Sender)
 		rid, err2 := strconv.Atoi(tx.Reciever)
 		if err1 != nil || err2 != nil {
@@ -41,121 +56,111 @@ func (cm *ClientManager) ComputeReshardMoves() []ReshardMove {
 		if sid < 1 || sid > totalAccounts || rid < 1 || rid > totalAccounts {
 			continue
 		}
-
-		sCluster := GetClusterIDForClient(int32(sid))
-		rCluster := GetClusterIDForClient(int32(rid))
-		if sCluster == 0 || rCluster == 0 {
-			continue
-		}
-
-		// sender interacts with receiver's cluster
-		sVec := inter[sid]
-		sVec[rCluster]++
-		inter[sid] = sVec
-
-		// receiver interacts with sender's cluster
-		rVec := inter[rid]
-		rVec[sCluster]++
-		inter[rid] = rVec
+		addEdge(sid, rid)
 	}
+
+	// 2) Initial assignment: range-based sharding
+	cluster := make([]int, totalAccounts+1)
+	clusterSize := make([]int, numClusters+1)
 
 	for acc := 1; acc <= totalAccounts; acc++ {
-		if _, ok := inter[acc]; !ok {
-			inter[acc] = [numClusters + 1]int{}
-		}
-	}
-
-	// 2) For each account, compute current cluster, best cluster and gain
-	type accPref struct {
-		Account     int
-		FromCluster int
-		ToCluster   int
-		Gain        int
-	}
-
-	var prefs []accPref
-	clusterSizes := make([]int, numClusters+1)
-
-	for acc := 1; acc <= totalAccounts; acc++ {
-		curr := GetClusterIDForClient(int32(acc))
-		if curr == 0 {
+		c := GetClusterIDForClient(int32(acc))
+		if c < 1 || c > numClusters {
 			continue
 		}
-		clusterSizes[curr]++
+		cluster[acc] = c
+		clusterSize[c]++
+	}
 
-		vec := inter[acc]
+	// 3) Local search: move accounts between clusters to reduce cut
+	maxPasses := 5
+	for pass := 0; pass < maxPasses; pass++ {
+		improved := false
 
-		bestCluster := curr
-		bestCount := vec[curr]
+		for acc := 1; acc <= totalAccounts; acc++ {
+			neighbors := adj[acc]
+			if len(neighbors) == 0 {
+				continue // no edges, no effect on cut
+			}
 
-		for c := 1; c <= numClusters; c++ {
-			if vec[c] > bestCount {
-				bestCount = vec[c]
-				bestCluster = c
+			curC := cluster[acc]
+			if curC == 0 {
+				continue
+			}
+
+			bestC := curC
+			bestDelta := 0 // negative = improvement
+
+			// try moving acc to each other cluster
+			for targetC := 1; targetC <= numClusters; targetC++ {
+				if targetC == curC {
+					continue
+				}
+				// capacity constraints
+				if clusterSize[targetC] >= maxClusterSize {
+					continue
+				}
+				if clusterSize[curC] <= minClusterSize {
+					continue
+				}
+
+				delta := 0
+				for nb, w := range neighbors {
+					nbC := cluster[nb]
+					if nbC == 0 {
+						continue
+					}
+					// edge contribution:
+					// currently cross if nbC != curC
+					// after move, cross if nbC != targetC
+
+					// intra -> cross
+					if nbC == curC && nbC != targetC {
+						delta += w
+					}
+					// cross -> intra
+					if nbC != curC && nbC == targetC {
+						delta -= w
+					}
+				}
+
+				if delta < bestDelta {
+					bestDelta = delta
+					bestC = targetC
+				}
+			}
+
+			// apply best move if it improves the cut
+			if bestC != curC {
+				cluster[acc] = bestC
+				clusterSize[curC]--
+				clusterSize[bestC]++
+				improved = true
 			}
 		}
 
-		gain := bestCount - vec[curr]
-
-		prefs = append(prefs, accPref{
-			Account:     acc,
-			FromCluster: curr,
-			ToCluster:   bestCluster,
-			Gain:        gain,
-		})
+		if !improved {
+			break
+		}
 	}
 
-	// 3) Sort accounts by gain descending (higher benefit to move first)
-	sort.Slice(prefs, func(i, j int) bool {
-		if prefs[i].Gain != prefs[j].Gain {
-			return prefs[i].Gain > prefs[j].Gain
-		}
-		return prefs[i].Account < prefs[j].Account
-	})
-
-	newCluster := make([]int, totalAccounts+1)
-	for acc := 1; acc <= totalAccounts; acc++ {
-		newCluster[acc] = GetClusterIDForClient(int32(acc))
-	}
-
-	// 4) Greedy move with capacity constraints [minClusterSize, maxClusterSize]
-	for _, p := range prefs {
-		if p.ToCluster == p.FromCluster {
-			continue // no change
-		}
-		from := p.FromCluster
-		to := p.ToCluster
-
-		if clusterSizes[to] >= maxClusterSize {
-			continue
-		}
-		if clusterSizes[from] <= minClusterSize {
-			continue
-		}
-
-		newCluster[p.Account] = to
-		clusterSizes[from]--
-		clusterSizes[to]++
-	}
-
-	// 5) Collect all moves where newCluster differs from original
+	// 4) Collect moves relative to original range-based assignment
 	var moves []ReshardMove
 	for acc := 1; acc <= totalAccounts; acc++ {
-		from := GetClusterIDForClient(int32(acc))
-		to := newCluster[acc]
-		if from == 0 || to == 0 {
+		orig := GetClusterIDForClient(int32(acc))
+		newC := cluster[acc]
+		if orig == 0 || newC == 0 {
 			continue
 		}
-		if from != to {
+		if orig != newC {
 			moves = append(moves, ReshardMove{
 				Account:     acc,
-				FromCluster: from,
-				ToCluster:   to,
+				FromCluster: orig,
+				ToCluster:   newC,
 			})
 		}
 	}
 
-	// stable order: sort by account id
 	sort.Slice(moves, func(i, j int) bool {
 		return moves[i].Account < moves[j].Account
 	})

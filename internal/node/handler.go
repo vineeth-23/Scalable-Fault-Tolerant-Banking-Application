@@ -2,6 +2,7 @@ package node
 
 import (
 	"bank-application/internal/common"
+	"bank-application/internal/database"
 	"context"
 	"fmt"
 	"sync"
@@ -80,7 +81,17 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 	var wg sync.WaitGroup
 	responses := make(chan *pb.AcceptMessageResponse, len(n.AliveClusterPeers))
 
-	n.recordMessage("ACCEPT", "SEND", accept.GetBallotNumber(), int64(accept.GetSequenceNumber()), req)
+	phase := ""
+
+	if additionalParameters != nil {
+		if additionalParameters.Phase != "" {
+			phase = string("-" + additionalParameters.Phase)
+		}
+	}
+
+	label := "ACCEPT" + phase
+
+	n.recordMessage(label, "SEND", accept.GetBallotNumber(), int64(accept.GetSequenceNumber()), req)
 
 	for _, addr := range n.AliveClusterPeers {
 		if addr == n.Address {
@@ -122,7 +133,8 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 	for resp := range responses {
 		if resp != nil {
 			ackCount++
-			n.recordMessage("ACCEPTED", "RECV", resp.GetBallotNumber(), int64(resp.GetSequenceNumber()), nil)
+			label = "ACCEPTED" + phase
+			n.recordMessage(label, "RECV", resp.GetBallotNumber(), int64(resp.GetSequenceNumber()), nil)
 		}
 	}
 
@@ -171,11 +183,11 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 		n.mu.Unlock()
 
 		//log.Printf("Calling BroadcastCommit")
-		n.BroadcastCommit(int64(seq), ballotNumber, req)
+		n.BroadcastCommit(int64(seq), ballotNumber, req, additionalParameters)
 		//log.Printf("BroadcastCommit complete")
 	} else if duplicate && originalLogEntry.Status == "ACCEPTED" {
 		//log.Printf("Already got accepted, now calling BroadcastCommit")
-		n.BroadcastCommit(originalLogEntry.SequenceNumber, originalLogEntry.BallotNumber, originalLogEntry.Request)
+		n.BroadcastCommit(originalLogEntry.SequenceNumber, originalLogEntry.BallotNumber, originalLogEntry.Request, additionalParameters)
 	} else if duplicate && originalLogEntry.Status == "COMMITTED" {
 		//log.Printf("Already got COMMITTED, now calling execute")
 		n.executeInOrder()
@@ -184,7 +196,7 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 	//log.Printf("[Leader %s] Not enough acks for seq=%d", n.ID, seq)
 }
 
-func (n *Node) BroadcastCommit(seq int64, ballotNumber *BallotNumber, req *pb.ClientRequestMessage) {
+func (n *Node) BroadcastCommit(seq int64, ballotNumber *BallotNumber, req *pb.ClientRequestMessage, additionalParameters *common.AdditionalParameteres) {
 	var wg sync.WaitGroup
 	responses := make(chan *pb.CommitMessageResponse, len(n.AliveClusterPeers))
 
@@ -220,7 +232,22 @@ func (n *Node) BroadcastCommit(seq int64, ballotNumber *BallotNumber, req *pb.Cl
 					NodeNo: ballotNumber.NodeNo,
 				},
 			}
-			n.recordMessage("COMMIT", "SEND", commitReq.GetBallotNumber(), int64(commitReq.GetSequenceNumber()), commitReq.GetClientRequestMessage())
+			if additionalParameters != nil {
+				commitReq.AdditionalParameteresFor_2Pc = &pb.AdditionalParameteresFor2PC{
+					PhaseType: string(additionalParameters.Phase),
+					ShardType: string(additionalParameters.Shard),
+				}
+			}
+			phase := ""
+
+			if additionalParameters != nil {
+				if additionalParameters.Phase != "" {
+					phase = string("-" + additionalParameters.Phase)
+				}
+			}
+
+			label := "COMMIT" + phase
+			n.recordMessage(label, "SEND", commitReq.GetBallotNumber(), int64(commitReq.GetSequenceNumber()), commitReq.GetClientRequestMessage())
 
 			resp, err := follower.CommitMessage(ctx, commitReq)
 			if err != nil {
@@ -396,13 +423,17 @@ func (n *Node) applyTransaction(txn *pb.Transaction, logEntry *LogEntry) bool {
 		oldVal := n.Balances[receiver]
 		newVal := oldVal + amt
 
-		n.WAL[txnTime] = &WALEntry{
+		n.WAL[txnTime] = &common.WALEntry{
 			TxnTime:  txnTime,
 			ClientID: receiver,
 			OldValue: oldVal,
 			NewValue: newVal,
 		}
 		n.Balances[receiver] = newVal
+
+		database.UpdateClientBalance(n.ID, receiver, n.Balances[receiver])
+		database.AddWALEntry(n.ID, n.WAL[txnTime])
+
 		return true
 	}
 
@@ -413,7 +444,7 @@ func (n *Node) applyTransaction(txn *pb.Transaction, logEntry *LogEntry) bool {
 		}
 		newVal := oldVal - amt
 
-		n.WAL[txnTime] = &WALEntry{
+		n.WAL[txnTime] = &common.WALEntry{
 			TxnTime:  txnTime,
 			ClientID: sender,
 			OldValue: oldVal,
@@ -421,12 +452,16 @@ func (n *Node) applyTransaction(txn *pb.Transaction, logEntry *LogEntry) bool {
 		}
 
 		n.Balances[sender] = newVal
+		database.UpdateClientBalance(n.ID, sender, n.Balances[sender])
+		database.AddWALEntry(n.ID, n.WAL[txnTime])
 		return true
 	}
 
 	if n.Balances[sender] >= amt {
 		n.Balances[sender] -= amt
 		n.Balances[receiver] += amt
+		database.UpdateClientBalance(n.ID, sender, n.Balances[sender])
+		database.UpdateClientBalance(n.ID, receiver, n.Balances[receiver])
 		//log.Printf("[Node %d] Applied txn: %s -> %s : %d", n.ID, sender, receiver, amt)
 		return true
 	}

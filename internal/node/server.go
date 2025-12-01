@@ -2,6 +2,7 @@ package node
 
 import (
 	"bank-application/internal/common"
+	"bank-application/internal/database"
 	"context"
 	"fmt"
 	"log"
@@ -412,7 +413,17 @@ func (s *NodeServer) AcceptMessage(ctx context.Context, req *pb.AcceptMessageReq
 	s.node.CurrentLeaderID = req.GetBallotNumber().GetNodeNo()
 
 	isValid := s.isAcceptMessageValid(req)
-	s.node.recordMessageLocked("ACCEPT", "RECV", req.GetBallotNumber(), int64(req.GetSequenceNumber()), req.GetClientRequestMessage())
+	phase := ""
+
+	if req.GetAdditionalParameteresFor_2Pc() != nil {
+		if req.GetAdditionalParameteresFor_2Pc().GetPhaseType() != "" {
+			phase = "-" + req.GetAdditionalParameteresFor_2Pc().GetPhaseType()
+		}
+	}
+
+	label := "ACCEPT" + phase
+
+	s.node.recordMessageLocked(label, "RECV", req.GetBallotNumber(), int64(req.GetSequenceNumber()), req.GetClientRequestMessage())
 
 	if isValid {
 		//log.Printf("[Node %d] Accepted seq=%d ballot=%d",
@@ -442,7 +453,9 @@ func (s *NodeServer) AcceptMessage(ctx context.Context, req *pb.AcceptMessageReq
 			//log.Printf("[Node %d] Marked seq=%d as ACCEPTED", s.node.ID, req.GetSequenceNumber())
 		}
 
-		s.node.recordMessageLocked("ACCEPTED", "SEND", req.GetBallotNumber(), int64(req.GetSequenceNumber()), req.GetClientRequestMessage())
+		label = "ACCEPTED" + phase
+
+		s.node.recordMessageLocked(label, "SEND", req.GetBallotNumber(), int64(req.GetSequenceNumber()), req.GetClientRequestMessage())
 
 		if req.AdditionalParameteresFor_2Pc != nil && req.AdditionalParameteresFor_2Pc.ShardType == string(common.ShardTypeCross) {
 			if req.GetTransaction().GetSender() == common.SenderNotValid {
@@ -525,6 +538,7 @@ func (s *NodeServer) CommitMessageFor2PCCommit(ctx context.Context, req *pb.Comm
 	}
 
 	delete(n.WAL, txnTime)
+	database.DeleteWALEntry(s.node.ID, txnTime)
 
 	return &pb.CommitMessageFor2PCCommitResponse{Success: true}, nil
 }
@@ -569,13 +583,25 @@ func (s *NodeServer) CommitMessage(ctx context.Context, req *pb.CommitMessageReq
 		entry.Status = "COMMITTED"
 		//log.Printf("[Node %d] Marked seq=%d for trnscn: (%s -> %s): %d as COMMITTED", s.node.ID, entry.Request.GetTransaction().GetSender(), entry.Request.GetTransaction().GetReciever(), entry.Request.GetTransaction().GetAmount())
 	}
-	s.node.recordMessageLocked("COMMIT", "RECV", req.GetBallotNumber(), int64(seq), req.GetClientRequestMessage())
+
+	phase := ""
+
+	if req.GetAdditionalParameteresFor_2Pc() != nil {
+		if req.GetAdditionalParameteresFor_2Pc().GetPhaseType() != "" {
+			phase = "-" + req.GetAdditionalParameteresFor_2Pc().GetPhaseType()
+		}
+	}
+
+	label := "COMMIT" + phase
+
+	s.node.recordMessageLocked(label, "RECV", req.GetBallotNumber(), int64(seq), req.GetClientRequestMessage())
 
 	s.node.mu.Unlock()
 
 	go s.node.executeInOrder()
 
-	s.node.recordMessageLocked("COMMITTED", "SEND", req.GetBallotNumber(), int64(seq), req.GetClientRequestMessage())
+	label = "COMMITTED" + phase
+	s.node.recordMessageLocked(label, "SEND", req.GetBallotNumber(), int64(seq), req.GetClientRequestMessage())
 
 	return &pb.CommitMessageResponse{
 		MessageType:    pb.MessageType_COMMITED,
@@ -1390,6 +1416,15 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 	}
 	n.Balances = balances
 
+	for acc := start; acc <= end; acc++ {
+		clientID := strconv.Itoa(int(acc))
+		err := database.UpdateClientBalance(s.node.ID, clientID, 10)
+		if err != nil {
+			log.Printf("[Node %d] Failed to reset Redis balance for node=%d client=%s: %v",
+				s.node.ID, s.node.ID, clientID, err)
+		}
+	}
+
 	n.CurrentBallot = &BallotNumber{
 		TermNo: 0,
 		NodeNo: n.ID,
@@ -1410,7 +1445,7 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 	n.lastPrepareSeen = time.Time{}
 	n.lastElectionStarted = time.Time{}
 	n.twoPCTimeout = 5 * time.Second
-	n.WAL = make(map[int32]*WALEntry)
+	n.WAL = make(map[int32]*common.WALEntry)
 
 	n.LockTable = make(map[string]bool)
 
@@ -1439,10 +1474,14 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 		n.electionTimer.Stop()
 		n.electionTimer = nil
 	}
-	if n.heartbeatTicker != nil {
-		n.heartbeatTicker.Stop()
-		n.heartbeatTicker = nil
-	}
+	//s.node.stopHeartbeats()
+	//if n.heartbeatTicker != nil {
+	//	n.heartbeatTicker.Stop()
+	//	n.heartbeatTicker = nil
+	//}
+	//if n.heartbeatStopCh != nil {
+	//	n.heartbeatStopCh = nil
+	//}
 
 	n.mu.Unlock()
 

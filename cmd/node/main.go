@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bank-application/internal/database"
 	"bank-application/internal/node"
 	"flag"
+	"fmt"
 	"log"
 )
 
@@ -21,6 +23,9 @@ func main() {
 
 	id := flag.Int("id", 1, "node ID (1-9)")
 	flag.Parse()
+
+	database.InitRedisClient("localhost:6379")
+	fmt.Println("Connected to Redis at localhost:6379")
 
 	address, ok := peers[int32(*id)]
 	if !ok {

@@ -39,6 +39,13 @@ type AdditionalParameteres struct {
 	Phase PhaseType
 }
 
+type WALEntry struct {
+	TxnTime  int32
+	ClientID string
+	OldValue int32
+	NewValue int32
+}
+
 func ClusterOf(nodeID int32) int {
 	switch {
 	case nodeID >= 1 && nodeID <= 3:
