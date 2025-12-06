@@ -328,7 +328,7 @@ func PrintReshard() {
 
 	ctrl := pb.NewClientControlClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	resp, err := ctrl.GetReshardPlan(ctx, &pb.GetReshardPlanRequest{})
@@ -343,8 +343,35 @@ func PrintReshard() {
 	}
 
 	fmt.Println("[Reshard] Suggested data movements:")
-	for _, m := range resp.Moves {
-		fmt.Printf("(%d,c%d,c%d)\n", m.Account, m.FromCluster, m.ToCluster)
+	//for _, m := range resp.Moves {
+	//	fmt.Printf("(%d,c%d,c%d)\n", m.Account, m.FromCluster, m.ToCluster)
+	//}
+
+	moves := resp.Moves
+	if len(moves) > 0 {
+		upd := make(map[int]int, len(moves))
+		for _, m := range moves {
+			log.Printf("[Reshard] Move: Account=%d FromCluster=%d → ToCluster=%d",
+				m.Account, m.FromCluster, m.ToCluster)
+			upd[int(m.Account)] = int(m.ToCluster)
+		}
+		if err := database.BulkSetShardMappings(upd); err != nil {
+			log.Printf("[Reshard] failed to persist shard mapping: %v", err)
+		} else {
+			log.Printf("[Reshard] persisted %d moves", len(moves))
+			for _, m := range moves {
+				var bal int32
+				bal = 10
+				if err := database.SetClusterBalance(int(m.ToCluster), int(m.Account), bal); err != nil {
+					log.Printf("[Reshard] error: couldn't write balance for acc=%d to cluster=%d: %v", m.Account, m.ToCluster, err)
+					continue
+				}
+				// Remove from old cluster to avoid duplication
+				if err := database.DeleteClusterBalance(int(m.FromCluster), int(m.Account)); err != nil {
+					log.Printf("[Reshard] warn: couldn't delete acc=%d from old cluster=%d: %v", m.Account, m.FromCluster, err)
+				}
+			}
+		}
 	}
 }
 
