@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	client "bank-application/internal/client"
@@ -38,6 +39,13 @@ func RunBenchmark(cfg BenchmarkConfig) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.DurationSec)*time.Second)
 	defer cancel()
 
+	startWall := time.Now()
+	var totalOps int64
+	var txnLimit int64
+	if cfg.Transactions > 0 {
+		txnLimit = int64(cfg.Transactions)
+	}
+
 	//stop := time.After(time.Duration(cfg.DurationSec) * time.Second)
 
 	for w := 0; w < cfg.Concurrency; w++ {
@@ -46,6 +54,9 @@ func RunBenchmark(cfg BenchmarkConfig) {
 			defer wg.Done()
 
 			for {
+				if txnLimit > 0 && atomic.LoadInt64(&totalOps) >= txnLimit {
+					return
+				}
 				select {
 				case <-ctx.Done():
 					return
@@ -76,6 +87,12 @@ func RunBenchmark(cfg BenchmarkConfig) {
 
 					lat := time.Since(start)
 					metrics.Add(ok, lat)
+
+					newCount := atomic.AddInt64(&totalOps, 1)
+					if txnLimit > 0 && newCount >= txnLimit {
+						cancel()
+						return
+					}
 				}
 			}
 		}(w)
@@ -89,8 +106,11 @@ func RunBenchmark(cfg BenchmarkConfig) {
 		return
 	}
 
-	duration := time.Duration(cfg.DurationSec) * time.Second
-	throughput := float64(s.Ops) / duration.Seconds()
+	elapsed := time.Since(startWall)
+	if elapsed <= 0 {
+		elapsed = time.Millisecond
+	}
+	throughput := float64(s.Ops) / elapsed.Seconds()
 
 	log.Printf("[Benchmark DONE]")
 	log.Printf("Total Ops:   %d", s.Ops)
