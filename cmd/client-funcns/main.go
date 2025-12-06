@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"bank-application/internal/database"
 	pb "bank-application/pb/bank-application/pb"
 
 	"google.golang.org/grpc"
@@ -288,12 +289,26 @@ func PrintBalances(clientID int32) {
 }
 
 func GetClusterForClient(clientID int32) []int32 {
-	switch {
-	case clientID >= 1 && clientID <= 3000:
+	c, err := database.GetShardMapping(int(clientID))
+	if err != nil || c < 1 || c > 3 {
+		switch {
+		case clientID >= 1 && clientID <= 3000:
+			c = 1
+		case clientID >= 3001 && clientID <= 6000:
+			c = 2
+		case clientID >= 6001 && clientID <= 9000:
+			c = 3
+		default:
+			c = 0
+		}
+	}
+	log.Printf("Cluster for client %d: %d\n", clientID, c)
+	switch c {
+	case 1:
 		return []int32{1, 2, 3}
-	case clientID >= 3001 && clientID <= 6000:
+	case 2:
 		return []int32{4, 5, 6}
-	case clientID >= 6001 && clientID <= 9000:
+	case 3:
 		return []int32{7, 8, 9}
 	default:
 		return []int32{}
@@ -339,6 +354,10 @@ func main() {
 	seq := flag.Int("seq", 0, "sequence number (for status)")
 	clientID := flag.Int("client", 0, "client ID for balances")
 	flag.Parse()
+
+	// Initialize Redis locally for reading shard mapping
+	database.InitRedisClient("localhost:6379")
+	_ = database.EnsureShardMapInitialized(9000)
 
 	switch *mode {
 	case "db":

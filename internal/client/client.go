@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pb "bank-application/pb/bank-application/pb"
+	"bank-application/internal/database"
 	"context"
 
 	"google.golang.org/grpc"
@@ -25,14 +26,59 @@ const (
 	maxRetries = 4
 )
 
+// dynamicClusterID returns the cluster ID for a client using the Redis-backed
+// shard mapping. Falls back to the default range-based mapping if not present.
+func dynamicClusterID(clientID int32) int {
+    c, err := database.GetShardMapping(int(clientID))
+    if err == nil && c >= 1 && c <= 3 {
+        return c
+    }
+    switch {
+    case clientID >= 1 && clientID <= 3000:
+        return 1
+    case clientID >= 3001 && clientID <= 6000:
+        return 2
+    case clientID >= 6001 && clientID <= 9000:
+        return 3
+    default:
+        return 0
+    }
+}
+
+func clusterPeersForCluster(c int) []int32 {
+    switch c {
+    case 1:
+        return []int32{1, 2, 3}
+    case 2:
+        return []int32{4, 5, 6}
+    case 3:
+        return []int32{7, 8, 9}
+    default:
+        return []int32{}
+    }
+}
+
+func clusterRootNodeForCluster(c int) int32 {
+    switch c {
+    case 1:
+        return 1
+    case 2:
+        return 4
+    case 3:
+        return 7
+    default:
+        return -1
+    }
+}
+
 func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 	<-c.doneCh
 	defer func() { c.doneCh <- struct{}{} }()
 
 	clientID, _ := strconv.Atoi(tx.Sender)
-	clusterID := GetClusterIDForClient(int32(clientID))
-	clusterPeers := GetClusterForClient(int32(clientID))
-	rootNode := GetClusterRootNode(int32(clientID))
+	clusterID := dynamicClusterID(int32(clientID))
+	clusterPeers := clusterPeersForCluster(clusterID)
+	rootNode := clusterRootNodeForCluster(clusterID)
 	rootAddr := allPeers[int32(rootNode)]
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
@@ -108,7 +154,7 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 	defer func() { c.doneCh <- struct{}{} }()
 
 	clientID, _ := strconv.Atoi(tx.Sender)
-	clusterID := GetClusterIDForClient(int32(clientID))
+	clusterID := dynamicClusterID(int32(clientID))
 
 	if leaderAddr, ok := c.manager.GetClusterLeader(clusterID); ok && leaderAddr != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
@@ -119,8 +165,8 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 		}
 	}
 
-	clusterPeers := GetClusterForClient(int32(clientID))
-	rootNode := GetClusterRootNode(int32(clientID))
+	clusterPeers := clusterPeersForCluster(clusterID)
+	rootNode := clusterRootNodeForCluster(clusterID)
 
 	rootAddr := allPeers[int32(rootNode)]
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)

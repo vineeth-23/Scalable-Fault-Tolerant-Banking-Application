@@ -102,7 +102,16 @@ func (s *NodeServer) HandleClientRequest(ctx context.Context, req *pb.ClientRequ
 
 	s.node.mu.Unlock()
 
-	if common.IsIntraShard(sender, receiver, s.node.ID) {
+	// Dynamic intra/cross using Redis-backed shard mapping
+	sID, e1 := strconv.Atoi(sender)
+	rID, e2 := strconv.Atoi(receiver)
+	if e1 != nil || e2 != nil {
+		return s.handleIntraShardTransaction(ctx, req, key, sender, receiver)
+	}
+	myCluster := common.ClusterOf(s.node.ID)
+	sC, _ := database.GetShardMapping(sID)
+	rC, _ := database.GetShardMapping(rID)
+	if sC == myCluster && rC == myCluster {
 		return s.handleIntraShardTransaction(ctx, req, key, sender, receiver)
 	}
 
@@ -135,6 +144,18 @@ func (s *NodeServer) handleIntraShardTransaction(
 	sender string,
 	receiver string,
 ) (*pb.ClientResponseMessage, error) {
+
+	// For handling when less than majority of nodes are alive
+	senderClientID, _ := strconv.Atoi(sender)
+	currentCluster, _ := database.GetShardMapping(senderClientID)
+	var senderNodes []int32
+	senderNodes = common.GetNodesBasedOnClusterID(int32(currentCluster))
+
+	aliveNodes := s.node.AliveNodes
+
+	if common.CountAliveNodes(senderNodes, aliveNodes) < (common.F + 1) {
+		return nil, nil
+	}
 
 	s.node.mu.Lock()
 	if ok := s.node.tryLockIntraShard(sender, receiver); !ok {
@@ -205,10 +226,10 @@ func (s *NodeServer) handleCrossShardTransaction(
 		return nil, status.Error(codes.InvalidArgument, "invalid sender or receiver id")
 	}
 
-	senderCluster := common.GetClusterIDForClient(int32(senderClientID))
-	receiverCluster := common.GetClusterIDForClient(int32(receiverClientID))
+	senderCluster, _ := database.GetShardMapping(senderClientID)
+	receiverCluster, _ := database.GetShardMapping(receiverClientID)
 
-	if senderCluster == -1 || receiverCluster == -1 {
+	if senderCluster == 0 || receiverCluster == 0 {
 		return nil, status.Error(codes.InvalidArgument, "sender or receiver out of range")
 	}
 
@@ -249,14 +270,26 @@ func (s *NodeServer) handleCrossShardTransaction(
 		Time:         req.GetTime(),
 		ClientNumber: req.GetClientNumber(),
 	}
+	// check if there are atleast f+1 nodes that are alive in both sender and reciever cluster
+	var recieverNodes, senderNodes []int32
+	recieverNodes = common.GetNodesBasedOnClusterID(int32(receiverCluster))
+	senderNodes = common.GetNodesBasedOnClusterID(int32(senderCluster))
+
+	aliveNodes := s.node.AliveNodes
+
+	if common.CountAliveNodes(recieverNodes, aliveNodes) < (common.F+1) ||
+		common.CountAliveNodes(senderNodes, aliveNodes) < (common.F+1) {
+		return nil, nil
+	}
+
 	s.node.ImplementPaxos(req1, additionalParameters)
 
 	// -----------------------------calling prepare phase of participant cluster------------------------------
-	participantNodes := common.GetClusterForClient(int32(receiverClientID))
+
 	var participantLeaderID int32
 	var participantLeaderAddr string
 
-	for _, nid := range participantNodes {
+	for _, nid := range recieverNodes {
 		addr, ok := n.Peers[nid]
 		if !ok {
 			continue
@@ -1050,8 +1083,9 @@ func (s *NodeServer) Prepare2PC(ctx context.Context, req *pb.Prepare2PCRequest) 
 		}, nil
 	}
 
-	start, end := common.ShardRangeForNode(n.ID)
-	if int32(receiverClientID) < start || int32(receiverClientID) > end {
+	myCluster := common.ClusterOf(n.ID)
+	rC, _ := database.GetShardMapping(receiverClientID)
+	if rC != myCluster {
 		// This cluster does not own receiver; treat as not responsible
 		return &pb.Prepare2PCResponse{
 			Prepared: false,
@@ -1195,9 +1229,14 @@ func (s *NodeServer) CommitOrAbort2PC(ctx context.Context, req *pb.CommitOrAbort
 
 // ------------------------------------CLIENT FUNCTIONS--------------------------------------------------------
 func (s *NodeServer) PrintBalance(ctx context.Context, req *pb.PrintBalanceRequest) (*pb.PrintBalanceResponse, error) {
-	balance := s.node.Balances[req.GetClientId()]
+	bal := s.node.Balances[req.GetClientId()]
+	//bal, err := database.GetClientBalance(s.node.ID, req.GetClientId())
+	//if err != nil {
+	//	return nil, err
+	//}
+
 	resp := &pb.PrintBalanceResponse{
-		Balance: balance,
+		Balance: bal,
 	}
 
 	node := s.node
@@ -1408,22 +1447,31 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 	n.mu.Lock()
 	n.Peers = common.Peers
 
+	// Reconcile balances from Redis and dynamic shard mapping
+	myClusterLocal := common.ClusterOf(n.ID)
+	existing, _ := database.GetAllClientBalances(s.node.ID)
 	balances := make(map[string]int32, 3000)
-	start, end := common.ShardRangeForNode(n.ID)
-	for acc := start; acc <= end; acc++ {
-		key := strconv.Itoa(int(acc))
-		balances[key] = 10
-	}
-	n.Balances = balances
-
-	for acc := start; acc <= end; acc++ {
-		clientID := strconv.Itoa(int(acc))
-		err := database.UpdateClientBalance(s.node.ID, clientID, 10)
-		if err != nil {
-			log.Printf("[Node %d] Failed to reset Redis balance for node=%d client=%s: %v",
-				s.node.ID, s.node.ID, clientID, err)
+	for clientID, _ := range existing {
+		if cid, err := strconv.Atoi(clientID); err == nil {
+			c, _ := database.GetShardMapping(cid)
+			if c == myClusterLocal {
+				balances[clientID] = 10
+			} else {
+				_ = database.DeleteClientBalance(s.node.ID, clientID)
+			}
 		}
 	}
+	for acc := 1; acc <= 9000; acc++ {
+		c, _ := database.GetShardMapping(acc)
+		if c == myClusterLocal {
+			key := strconv.Itoa(acc)
+			if _, ok := balances[key]; !ok {
+				balances[key] = 10
+				_ = database.UpdateClientBalance(s.node.ID, key, balances[key])
+			}
+		}
+	}
+	n.Balances = balances
 
 	n.CurrentBallot = &BallotNumber{
 		TermNo: 0,

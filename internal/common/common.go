@@ -17,6 +17,7 @@ var Peers = map[int32]string{
 const (
 	SenderNotValid   = "SENDER_NOT_VALID"
 	ReceiverNotValid = "RECEIVER_NOT_VALID"
+	F                = 1
 )
 
 type ShardType string
@@ -105,4 +106,32 @@ func GetClusterForClient(clientID int32) []int32 {
 	default:
 		return []int32{}
 	}
+}
+
+func GetNodesBasedOnClusterID(clusterID int32) []int32 {
+	switch clusterID {
+	case 1:
+		return []int32{1, 2, 3}
+	case 2:
+		return []int32{4, 5, 6}
+	case 3:
+		return []int32{7, 8, 9}
+	default:
+		return []int32{}
+	}
+}
+
+func CountAliveNodes(nodes []int32, aliveNodes []int32) int {
+	aliveSet := make(map[int32]bool)
+	for _, n := range aliveNodes {
+		aliveSet[n] = true
+	}
+
+	count := 0
+	for _, n := range nodes {
+		if aliveSet[n] {
+			count++
+		}
+	}
+	return count
 }

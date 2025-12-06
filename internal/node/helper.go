@@ -2,6 +2,7 @@ package node
 
 import (
 	"bank-application/internal/common"
+	"bank-application/internal/database"
 	"bank-application/pb/bank-application/pb"
 	"context"
 	"encoding/csv"
@@ -380,11 +381,11 @@ func (n *Node) clientIDForThisNode(req *pb.ClientRequestMessage) string {
 	sender := tx.GetSender()
 	receiver := tx.GetReciever()
 
-	start, end := common.ShardRangeForNode(n.ID)
+	myCluster := common.ClusterOf(n.ID)
 
 	if sender != "" && sender != common.SenderNotValid {
 		if sid, err := strconv.Atoi(sender); err == nil {
-			if int32(sid) >= start && int32(sid) <= end {
+			if c, e := database.GetShardMapping(sid); e == nil && c == myCluster {
 				return sender
 			}
 		}
@@ -392,7 +393,7 @@ func (n *Node) clientIDForThisNode(req *pb.ClientRequestMessage) string {
 
 	if receiver != "" && receiver != common.ReceiverNotValid {
 		if rid, err := strconv.Atoi(receiver); err == nil {
-			if int32(rid) >= start && int32(rid) <= end {
+			if c, e := database.GetShardMapping(rid); e == nil && c == myCluster {
 				return receiver
 			}
 		}

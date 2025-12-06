@@ -101,6 +101,8 @@ type Node struct {
 }
 
 func NewNode(id int32, address string, peers map[int32]string) *Node {
+	myCluster := common.ClusterOf(id)
+	//existing, _ := database.GetAllClientBalances(id)
 	balances := make(map[string]int32, 3000)
 	start, end := common.ShardRangeForNode(id)
 	for acc := start; acc <= end; acc++ {
@@ -150,7 +152,7 @@ func NewNode(id int32, address string, peers map[int32]string) *Node {
 	node.lastPrepareSeen = time.Now()
 	//node.replyCond = sync.NewCond(&node.mu)
 
-	myCluster := common.ClusterOf(id)
+	myCluster = common.ClusterOf(id)
 	node.AliveClusterPeers = make(map[int32]string)
 
 	for peerID, addr := range peers {
