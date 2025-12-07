@@ -42,7 +42,7 @@ func startClientControlServer(cm *client.ClientManager) {
 
 // CSE535-F25-Project-3-Testcases
 func main() {
-	sets := client.ParseCSV("C:/Users/skotha/Downloads/Proj-3_TC.csv")
+	sets := client.ParseCSV("C:/Users/skotha/Downloads/CSE535-F25-Project-3-Testcases.csv")
 
 	peers := map[int32]string{
 		1: "localhost:50051",

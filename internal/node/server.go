@@ -156,7 +156,10 @@ func (s *NodeServer) handleIntraShardTransaction(
 			log.Printf("[Intra Shard] Less than majority nodes are alive for trnscn: %s -> %s: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount())
 		}
 
-		return nil, nil
+		return nil, status.Error(
+			codes.FailedPrecondition,
+			"transaction aborted: less than majority of nodes are alive in the shard",
+		)
 	}
 
 	s.node.mu.Lock()
@@ -285,7 +288,10 @@ func (s *NodeServer) handleCrossShardTransaction(
 		if req.GetTransaction() != nil {
 			log.Printf("[Cross Shard] Less than majority nodes are alive for trnscn: %s -> %s: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount())
 		}
-		return nil, nil
+		return nil, status.Error(
+			codes.FailedPrecondition,
+			"transaction aborted: less than majority of nodes are alive in the shard",
+		)
 	}
 
 	s.node.ImplementPaxos(req1, additionalParameters)
@@ -870,7 +876,11 @@ func (s *NodeServer) UpdateNodeStatus(ctx context.Context, req *pb.AliveRequest)
 			if !found {
 				n.AliveNodes = append(n.AliveNodes, updateStatusNodeID)
 			}
-			n.AliveClusterPeers[updateStatusNodeID] = n.Peers[updateStatusNodeID]
+			myCluster := common.ClusterOf(n.ID)
+			updateStatusNodeIDCluster := common.ClusterOf(updateStatusNodeID)
+			if myCluster == updateStatusNodeIDCluster {
+				n.AliveClusterPeers[updateStatusNodeID] = n.Peers[updateStatusNodeID]
+			}
 		} else {
 			newList := make([]int32, 0, len(n.AliveNodes))
 			for _, id := range n.AliveNodes {
@@ -879,7 +889,12 @@ func (s *NodeServer) UpdateNodeStatus(ctx context.Context, req *pb.AliveRequest)
 				}
 			}
 			n.AliveNodes = newList
-			delete(n.AliveClusterPeers, updateStatusNodeID)
+			myCluster := common.ClusterOf(n.ID)
+			updateStatusNodeIDCluster := common.ClusterOf(updateStatusNodeID)
+			if myCluster == updateStatusNodeIDCluster {
+				delete(n.AliveClusterPeers, updateStatusNodeID)
+			}
+
 		}
 		return nil, nil
 	}

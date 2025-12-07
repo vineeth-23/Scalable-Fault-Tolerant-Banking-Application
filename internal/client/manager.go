@@ -29,6 +29,47 @@ type ClientManager struct {
 	AllExecutedTransferTransactions []*Txn
 }
 
+// ProcessRetryQueue retries all previously skipped transactions after a RECOVER.
+// Successful ones are removed; failed ones are re-queued for future recovery.
+func (cm *ClientManager) ProcessRetryQueue() {
+	pending := cm.DrainRetryQueue()
+	if len(pending) == 0 {
+		return
+	}
+
+	var wg sync.WaitGroup
+	for _, tx := range pending {
+		tx := tx
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			//start := time.Now()
+			ok := false
+			switch tx.Command.Type {
+			case CommandTypeTransfer:
+				client, okc := cm.Clients[tx.Sender]
+				if !okc {
+					return
+				}
+				ok = client.SendTransaction(tx, cm.peers)
+			case CommandTypeRead:
+				client, okc := cm.Clients[tx.Sender]
+				if !okc {
+					return
+				}
+				ok = client.SendRead(tx, cm.peers)
+			default:
+				return
+			}
+			//RecordPerf(ok, time.Since(start))
+			if !ok {
+				cm.AddToRetryQueue(tx)
+			}
+		}()
+	}
+	wg.Wait()
+}
+
 func NewClientManager(peers map[int32]string) *ClientManager {
 	cm := &ClientManager{
 		Clients:       make(map[string]*Client, 9000),
@@ -226,6 +267,9 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 				}
 
 				RecordPerf(okExec, time.Since(start))
+				if !okExec {
+					cm.AddToRetryQueue(tx)
+				}
 			}(tx)
 
 			i++
@@ -236,6 +280,9 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 		if i < n && (txns[i].Command.Type == CommandTypeFail || txns[i].Command.Type == CommandTypeRecover) {
 			tx := txns[i]
 			cm.UpdateNodeStatus(tx)
+			if tx.Command.Type == CommandTypeRecover {
+				cm.ProcessRetryQueue()
+			}
 			i++
 		}
 	}
