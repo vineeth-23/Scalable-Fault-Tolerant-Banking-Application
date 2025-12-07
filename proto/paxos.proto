@@ -153,9 +153,16 @@ message HeartbeatResponse {
   bool ack = 1;
 }
 
+message OnlyUpdateAliveNodesAndPeersList {
+  int32 updated_status_node_id = 1;
+  bool alive = 2;
+}
+
 message AliveRequest {
   bool alive = 1;
   repeated int32 alive_nodes = 2;
+  bool only_update_alive_nodes_and_alive_peers_list = 3;
+  OnlyUpdateAliveNodesAndPeersList only_update_alive_nodes_and_peers_list = 4;
 }
 
 message AliveResponse {

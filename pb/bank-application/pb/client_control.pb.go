@@ -161,6 +161,110 @@ func (x *GetReshardPlanResponse) GetMoves() []*ReshardMove {
 	return nil
 }
 
+type PerformanceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Set           int32                  `protobuf:"varint,1,opt,name=set,proto3" json:"set,omitempty"` // 0 = most recent completed set
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PerformanceRequest) Reset() {
+	*x = PerformanceRequest{}
+	mi := &file_proto_client_control_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PerformanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PerformanceRequest) ProtoMessage() {}
+
+func (x *PerformanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_client_control_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PerformanceRequest.ProtoReflect.Descriptor instead.
+func (*PerformanceRequest) Descriptor() ([]byte, []int) {
+	return file_proto_client_control_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PerformanceRequest) GetSet() int32 {
+	if x != nil {
+		return x.Set
+	}
+	return 0
+}
+
+type PerformanceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Throughput    float64                `protobuf:"fixed64,1,opt,name=throughput,proto3" json:"throughput,omitempty"`
+	AvgLatencyMs  float64                `protobuf:"fixed64,2,opt,name=avg_latency_ms,json=avgLatencyMs,proto3" json:"avg_latency_ms,omitempty"`
+	Ops           int32                  `protobuf:"varint,3,opt,name=ops,proto3" json:"ops,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PerformanceResponse) Reset() {
+	*x = PerformanceResponse{}
+	mi := &file_proto_client_control_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PerformanceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PerformanceResponse) ProtoMessage() {}
+
+func (x *PerformanceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_client_control_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PerformanceResponse.ProtoReflect.Descriptor instead.
+func (*PerformanceResponse) Descriptor() ([]byte, []int) {
+	return file_proto_client_control_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PerformanceResponse) GetThroughput() float64 {
+	if x != nil {
+		return x.Throughput
+	}
+	return 0
+}
+
+func (x *PerformanceResponse) GetAvgLatencyMs() float64 {
+	if x != nil {
+		return x.AvgLatencyMs
+	}
+	return 0
+}
+
+func (x *PerformanceResponse) GetOps() int32 {
+	if x != nil {
+		return x.Ops
+	}
+	return 0
+}
+
 var File_proto_client_control_proto protoreflect.FileDescriptor
 
 const file_proto_client_control_proto_rawDesc = "" +
@@ -173,9 +277,18 @@ const file_proto_client_control_proto_rawDesc = "" +
 	"to_cluster\x18\x03 \x01(\x05R\ttoCluster\"\x17\n" +
 	"\x15GetReshardPlanRequest\"D\n" +
 	"\x16GetReshardPlanResponse\x12*\n" +
-	"\x05moves\x18\x01 \x03(\v2\x14.banking.ReshardMoveR\x05moves2b\n" +
+	"\x05moves\x18\x01 \x03(\v2\x14.banking.ReshardMoveR\x05moves\"&\n" +
+	"\x12PerformanceRequest\x12\x10\n" +
+	"\x03set\x18\x01 \x01(\x05R\x03set\"m\n" +
+	"\x13PerformanceResponse\x12\x1e\n" +
+	"\n" +
+	"throughput\x18\x01 \x01(\x01R\n" +
+	"throughput\x12$\n" +
+	"\x0eavg_latency_ms\x18\x02 \x01(\x01R\favgLatencyMs\x12\x10\n" +
+	"\x03ops\x18\x03 \x01(\x05R\x03ops2\xac\x01\n" +
 	"\rClientControl\x12Q\n" +
-	"\x0eGetReshardPlan\x12\x1e.banking.GetReshardPlanRequest\x1a\x1f.banking.GetReshardPlanResponseB\x18Z\x16pb/bank-application/pbb\x06proto3"
+	"\x0eGetReshardPlan\x12\x1e.banking.GetReshardPlanRequest\x1a\x1f.banking.GetReshardPlanResponse\x12H\n" +
+	"\vPerformance\x12\x1b.banking.PerformanceRequest\x1a\x1c.banking.PerformanceResponseB\x18Z\x16pb/bank-application/pbb\x06proto3"
 
 var (
 	file_proto_client_control_proto_rawDescOnce sync.Once
@@ -189,18 +302,22 @@ func file_proto_client_control_proto_rawDescGZIP() []byte {
 	return file_proto_client_control_proto_rawDescData
 }
 
-var file_proto_client_control_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_client_control_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_client_control_proto_goTypes = []any{
 	(*ReshardMove)(nil),            // 0: banking.ReshardMove
 	(*GetReshardPlanRequest)(nil),  // 1: banking.GetReshardPlanRequest
 	(*GetReshardPlanResponse)(nil), // 2: banking.GetReshardPlanResponse
+	(*PerformanceRequest)(nil),     // 3: banking.PerformanceRequest
+	(*PerformanceResponse)(nil),    // 4: banking.PerformanceResponse
 }
 var file_proto_client_control_proto_depIdxs = []int32{
 	0, // 0: banking.GetReshardPlanResponse.moves:type_name -> banking.ReshardMove
 	1, // 1: banking.ClientControl.GetReshardPlan:input_type -> banking.GetReshardPlanRequest
-	2, // 2: banking.ClientControl.GetReshardPlan:output_type -> banking.GetReshardPlanResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	3, // 2: banking.ClientControl.Performance:input_type -> banking.PerformanceRequest
+	2, // 3: banking.ClientControl.GetReshardPlan:output_type -> banking.GetReshardPlanResponse
+	4, // 4: banking.ClientControl.Performance:output_type -> banking.PerformanceResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -217,7 +334,7 @@ func file_proto_client_control_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_client_control_proto_rawDesc), len(file_proto_client_control_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

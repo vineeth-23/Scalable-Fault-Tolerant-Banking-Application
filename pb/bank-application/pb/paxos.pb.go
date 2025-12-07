@@ -1478,17 +1478,71 @@ func (x *HeartbeatResponse) GetAck() bool {
 	return false
 }
 
+type OnlyUpdateAliveNodesAndPeersList struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	UpdatedStatusNodeId int32                  `protobuf:"varint,1,opt,name=updated_status_node_id,json=updatedStatusNodeId,proto3" json:"updated_status_node_id,omitempty"`
+	Alive               bool                   `protobuf:"varint,2,opt,name=alive,proto3" json:"alive,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *OnlyUpdateAliveNodesAndPeersList) Reset() {
+	*x = OnlyUpdateAliveNodesAndPeersList{}
+	mi := &file_proto_paxos_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnlyUpdateAliveNodesAndPeersList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnlyUpdateAliveNodesAndPeersList) ProtoMessage() {}
+
+func (x *OnlyUpdateAliveNodesAndPeersList) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_paxos_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnlyUpdateAliveNodesAndPeersList.ProtoReflect.Descriptor instead.
+func (*OnlyUpdateAliveNodesAndPeersList) Descriptor() ([]byte, []int) {
+	return file_proto_paxos_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *OnlyUpdateAliveNodesAndPeersList) GetUpdatedStatusNodeId() int32 {
+	if x != nil {
+		return x.UpdatedStatusNodeId
+	}
+	return 0
+}
+
+func (x *OnlyUpdateAliveNodesAndPeersList) GetAlive() bool {
+	if x != nil {
+		return x.Alive
+	}
+	return false
+}
+
 type AliveRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Alive         bool                   `protobuf:"varint,1,opt,name=alive,proto3" json:"alive,omitempty"`
-	AliveNodes    []int32                `protobuf:"varint,2,rep,packed,name=alive_nodes,json=aliveNodes,proto3" json:"alive_nodes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                                 protoimpl.MessageState            `protogen:"open.v1"`
+	Alive                                 bool                              `protobuf:"varint,1,opt,name=alive,proto3" json:"alive,omitempty"`
+	AliveNodes                            []int32                           `protobuf:"varint,2,rep,packed,name=alive_nodes,json=aliveNodes,proto3" json:"alive_nodes,omitempty"`
+	OnlyUpdateAliveNodesAndAlivePeersList bool                              `protobuf:"varint,3,opt,name=only_update_alive_nodes_and_alive_peers_list,json=onlyUpdateAliveNodesAndAlivePeersList,proto3" json:"only_update_alive_nodes_and_alive_peers_list,omitempty"`
+	OnlyUpdateAliveNodesAndPeersList      *OnlyUpdateAliveNodesAndPeersList `protobuf:"bytes,4,opt,name=only_update_alive_nodes_and_peers_list,json=onlyUpdateAliveNodesAndPeersList,proto3" json:"only_update_alive_nodes_and_peers_list,omitempty"`
+	unknownFields                         protoimpl.UnknownFields
+	sizeCache                             protoimpl.SizeCache
 }
 
 func (x *AliveRequest) Reset() {
 	*x = AliveRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[24]
+	mi := &file_proto_paxos_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1500,7 +1554,7 @@ func (x *AliveRequest) String() string {
 func (*AliveRequest) ProtoMessage() {}
 
 func (x *AliveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[24]
+	mi := &file_proto_paxos_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1513,7 +1567,7 @@ func (x *AliveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AliveRequest.ProtoReflect.Descriptor instead.
 func (*AliveRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{24}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *AliveRequest) GetAlive() bool {
@@ -1530,6 +1584,20 @@ func (x *AliveRequest) GetAliveNodes() []int32 {
 	return nil
 }
 
+func (x *AliveRequest) GetOnlyUpdateAliveNodesAndAlivePeersList() bool {
+	if x != nil {
+		return x.OnlyUpdateAliveNodesAndAlivePeersList
+	}
+	return false
+}
+
+func (x *AliveRequest) GetOnlyUpdateAliveNodesAndPeersList() *OnlyUpdateAliveNodesAndPeersList {
+	if x != nil {
+		return x.OnlyUpdateAliveNodesAndPeersList
+	}
+	return nil
+}
+
 type AliveResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -1539,7 +1607,7 @@ type AliveResponse struct {
 
 func (x *AliveResponse) Reset() {
 	*x = AliveResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[25]
+	mi := &file_proto_paxos_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1551,7 +1619,7 @@ func (x *AliveResponse) String() string {
 func (*AliveResponse) ProtoMessage() {}
 
 func (x *AliveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[25]
+	mi := &file_proto_paxos_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1564,7 +1632,7 @@ func (x *AliveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AliveResponse.ProtoReflect.Descriptor instead.
 func (*AliveResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{25}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *AliveResponse) GetSuccess() bool {
@@ -1582,7 +1650,7 @@ type PrintViewRequest struct {
 
 func (x *PrintViewRequest) Reset() {
 	*x = PrintViewRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[26]
+	mi := &file_proto_paxos_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1594,7 +1662,7 @@ func (x *PrintViewRequest) String() string {
 func (*PrintViewRequest) ProtoMessage() {}
 
 func (x *PrintViewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[26]
+	mi := &file_proto_paxos_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1607,7 +1675,7 @@ func (x *PrintViewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintViewRequest.ProtoReflect.Descriptor instead.
 func (*PrintViewRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{26}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{27}
 }
 
 type PrintViewResponse struct {
@@ -1619,7 +1687,7 @@ type PrintViewResponse struct {
 
 func (x *PrintViewResponse) Reset() {
 	*x = PrintViewResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[27]
+	mi := &file_proto_paxos_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1631,7 +1699,7 @@ func (x *PrintViewResponse) String() string {
 func (*PrintViewResponse) ProtoMessage() {}
 
 func (x *PrintViewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[27]
+	mi := &file_proto_paxos_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1644,7 +1712,7 @@ func (x *PrintViewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintViewResponse.ProtoReflect.Descriptor instead.
 func (*PrintViewResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{27}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *PrintViewResponse) GetNewViewRequest() []*NewViewRequest {
@@ -1662,7 +1730,7 @@ type FailCurrentLeaderRequest struct {
 
 func (x *FailCurrentLeaderRequest) Reset() {
 	*x = FailCurrentLeaderRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[28]
+	mi := &file_proto_paxos_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1674,7 +1742,7 @@ func (x *FailCurrentLeaderRequest) String() string {
 func (*FailCurrentLeaderRequest) ProtoMessage() {}
 
 func (x *FailCurrentLeaderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[28]
+	mi := &file_proto_paxos_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1687,7 +1755,7 @@ func (x *FailCurrentLeaderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FailCurrentLeaderRequest.ProtoReflect.Descriptor instead.
 func (*FailCurrentLeaderRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{28}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{29}
 }
 
 type FailCurrentLeaderResponse struct {
@@ -1698,7 +1766,7 @@ type FailCurrentLeaderResponse struct {
 
 func (x *FailCurrentLeaderResponse) Reset() {
 	*x = FailCurrentLeaderResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[29]
+	mi := &file_proto_paxos_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1710,7 +1778,7 @@ func (x *FailCurrentLeaderResponse) String() string {
 func (*FailCurrentLeaderResponse) ProtoMessage() {}
 
 func (x *FailCurrentLeaderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[29]
+	mi := &file_proto_paxos_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1723,7 +1791,7 @@ func (x *FailCurrentLeaderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FailCurrentLeaderResponse.ProtoReflect.Descriptor instead.
 func (*FailCurrentLeaderResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{29}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{30}
 }
 
 type PrintLogRequest struct {
@@ -1734,7 +1802,7 @@ type PrintLogRequest struct {
 
 func (x *PrintLogRequest) Reset() {
 	*x = PrintLogRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[30]
+	mi := &file_proto_paxos_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1746,7 +1814,7 @@ func (x *PrintLogRequest) String() string {
 func (*PrintLogRequest) ProtoMessage() {}
 
 func (x *PrintLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[30]
+	mi := &file_proto_paxos_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1759,7 +1827,7 @@ func (x *PrintLogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintLogRequest.ProtoReflect.Descriptor instead.
 func (*PrintLogRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{30}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{31}
 }
 
 type PrintLogResponse struct {
@@ -1771,7 +1839,7 @@ type PrintLogResponse struct {
 
 func (x *PrintLogResponse) Reset() {
 	*x = PrintLogResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[31]
+	mi := &file_proto_paxos_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1783,7 +1851,7 @@ func (x *PrintLogResponse) String() string {
 func (*PrintLogResponse) ProtoMessage() {}
 
 func (x *PrintLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[31]
+	mi := &file_proto_paxos_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1796,7 +1864,7 @@ func (x *PrintLogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintLogResponse.ProtoReflect.Descriptor instead.
 func (*PrintLogResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{31}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *PrintLogResponse) GetLogEntryMessage() []*LogEntryMessage {
@@ -1815,7 +1883,7 @@ type ActiveCatchUpRequest struct {
 
 func (x *ActiveCatchUpRequest) Reset() {
 	*x = ActiveCatchUpRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[32]
+	mi := &file_proto_paxos_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1827,7 +1895,7 @@ func (x *ActiveCatchUpRequest) String() string {
 func (*ActiveCatchUpRequest) ProtoMessage() {}
 
 func (x *ActiveCatchUpRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[32]
+	mi := &file_proto_paxos_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1840,7 +1908,7 @@ func (x *ActiveCatchUpRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActiveCatchUpRequest.ProtoReflect.Descriptor instead.
 func (*ActiveCatchUpRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{32}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ActiveCatchUpRequest) GetAcceptLogEntries() []*AcceptLogEntry {
@@ -1858,7 +1926,7 @@ type ActiveCatchUpResponse struct {
 
 func (x *ActiveCatchUpResponse) Reset() {
 	*x = ActiveCatchUpResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[33]
+	mi := &file_proto_paxos_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1870,7 +1938,7 @@ func (x *ActiveCatchUpResponse) String() string {
 func (*ActiveCatchUpResponse) ProtoMessage() {}
 
 func (x *ActiveCatchUpResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[33]
+	mi := &file_proto_paxos_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1883,7 +1951,7 @@ func (x *ActiveCatchUpResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActiveCatchUpResponse.ProtoReflect.Descriptor instead.
 func (*ActiveCatchUpResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{33}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{34}
 }
 
 type FlushAndUpdateStatusRequest struct {
@@ -1896,7 +1964,7 @@ type FlushAndUpdateStatusRequest struct {
 
 func (x *FlushAndUpdateStatusRequest) Reset() {
 	*x = FlushAndUpdateStatusRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[34]
+	mi := &file_proto_paxos_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1908,7 +1976,7 @@ func (x *FlushAndUpdateStatusRequest) String() string {
 func (*FlushAndUpdateStatusRequest) ProtoMessage() {}
 
 func (x *FlushAndUpdateStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[34]
+	mi := &file_proto_paxos_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1921,7 +1989,7 @@ func (x *FlushAndUpdateStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlushAndUpdateStatusRequest.ProtoReflect.Descriptor instead.
 func (*FlushAndUpdateStatusRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{34}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *FlushAndUpdateStatusRequest) GetLiveNodes() []int32 {
@@ -1948,7 +2016,7 @@ type ReadClientBalanceRequest struct {
 
 func (x *ReadClientBalanceRequest) Reset() {
 	*x = ReadClientBalanceRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[35]
+	mi := &file_proto_paxos_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1960,7 +2028,7 @@ func (x *ReadClientBalanceRequest) String() string {
 func (*ReadClientBalanceRequest) ProtoMessage() {}
 
 func (x *ReadClientBalanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[35]
+	mi := &file_proto_paxos_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1973,7 +2041,7 @@ func (x *ReadClientBalanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadClientBalanceRequest.ProtoReflect.Descriptor instead.
 func (*ReadClientBalanceRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{35}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ReadClientBalanceRequest) GetTime() int32 {
@@ -1999,7 +2067,7 @@ type ReadClientBalanceResponse struct {
 
 func (x *ReadClientBalanceResponse) Reset() {
 	*x = ReadClientBalanceResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[36]
+	mi := &file_proto_paxos_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2011,7 +2079,7 @@ func (x *ReadClientBalanceResponse) String() string {
 func (*ReadClientBalanceResponse) ProtoMessage() {}
 
 func (x *ReadClientBalanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[36]
+	mi := &file_proto_paxos_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2024,7 +2092,7 @@ func (x *ReadClientBalanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadClientBalanceResponse.ProtoReflect.Descriptor instead.
 func (*ReadClientBalanceResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{36}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ReadClientBalanceResponse) GetBalance() int32 {
@@ -2043,7 +2111,7 @@ type PrintBalanceRequest struct {
 
 func (x *PrintBalanceRequest) Reset() {
 	*x = PrintBalanceRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[37]
+	mi := &file_proto_paxos_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2055,7 +2123,7 @@ func (x *PrintBalanceRequest) String() string {
 func (*PrintBalanceRequest) ProtoMessage() {}
 
 func (x *PrintBalanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[37]
+	mi := &file_proto_paxos_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2068,7 +2136,7 @@ func (x *PrintBalanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintBalanceRequest.ProtoReflect.Descriptor instead.
 func (*PrintBalanceRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{37}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *PrintBalanceRequest) GetClientId() string {
@@ -2087,7 +2155,7 @@ type PrintBalanceResponse struct {
 
 func (x *PrintBalanceResponse) Reset() {
 	*x = PrintBalanceResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[38]
+	mi := &file_proto_paxos_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2099,7 +2167,7 @@ func (x *PrintBalanceResponse) String() string {
 func (*PrintBalanceResponse) ProtoMessage() {}
 
 func (x *PrintBalanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[38]
+	mi := &file_proto_paxos_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2112,7 +2180,7 @@ func (x *PrintBalanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintBalanceResponse.ProtoReflect.Descriptor instead.
 func (*PrintBalanceResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{38}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *PrintBalanceResponse) GetBalance() int32 {
@@ -2130,7 +2198,7 @@ type GetLeaderLogRequest struct {
 
 func (x *GetLeaderLogRequest) Reset() {
 	*x = GetLeaderLogRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[39]
+	mi := &file_proto_paxos_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2142,7 +2210,7 @@ func (x *GetLeaderLogRequest) String() string {
 func (*GetLeaderLogRequest) ProtoMessage() {}
 
 func (x *GetLeaderLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[39]
+	mi := &file_proto_paxos_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2155,7 +2223,7 @@ func (x *GetLeaderLogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLeaderLogRequest.ProtoReflect.Descriptor instead.
 func (*GetLeaderLogRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{39}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{40}
 }
 
 type GetLeaderLogResponse struct {
@@ -2168,7 +2236,7 @@ type GetLeaderLogResponse struct {
 
 func (x *GetLeaderLogResponse) Reset() {
 	*x = GetLeaderLogResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[40]
+	mi := &file_proto_paxos_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2180,7 +2248,7 @@ func (x *GetLeaderLogResponse) String() string {
 func (*GetLeaderLogResponse) ProtoMessage() {}
 
 func (x *GetLeaderLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[40]
+	mi := &file_proto_paxos_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2193,7 +2261,7 @@ func (x *GetLeaderLogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLeaderLogResponse.ProtoReflect.Descriptor instead.
 func (*GetLeaderLogResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{40}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *GetLeaderLogResponse) GetIsLeader() bool {
@@ -2218,7 +2286,7 @@ type GetClusterLeaderRequest struct {
 
 func (x *GetClusterLeaderRequest) Reset() {
 	*x = GetClusterLeaderRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[41]
+	mi := &file_proto_paxos_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2230,7 +2298,7 @@ func (x *GetClusterLeaderRequest) String() string {
 func (*GetClusterLeaderRequest) ProtoMessage() {}
 
 func (x *GetClusterLeaderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[41]
+	mi := &file_proto_paxos_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2243,7 +2311,7 @@ func (x *GetClusterLeaderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetClusterLeaderRequest.ProtoReflect.Descriptor instead.
 func (*GetClusterLeaderRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{41}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{42}
 }
 
 type GetClusterLeaderResponse struct {
@@ -2256,7 +2324,7 @@ type GetClusterLeaderResponse struct {
 
 func (x *GetClusterLeaderResponse) Reset() {
 	*x = GetClusterLeaderResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[42]
+	mi := &file_proto_paxos_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2268,7 +2336,7 @@ func (x *GetClusterLeaderResponse) String() string {
 func (*GetClusterLeaderResponse) ProtoMessage() {}
 
 func (x *GetClusterLeaderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[42]
+	mi := &file_proto_paxos_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2281,7 +2349,7 @@ func (x *GetClusterLeaderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetClusterLeaderResponse.ProtoReflect.Descriptor instead.
 func (*GetClusterLeaderResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{42}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *GetClusterLeaderResponse) GetIsLeader() bool {
@@ -2307,7 +2375,7 @@ type Prepare2PCRequest struct {
 
 func (x *Prepare2PCRequest) Reset() {
 	*x = Prepare2PCRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[43]
+	mi := &file_proto_paxos_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2319,7 +2387,7 @@ func (x *Prepare2PCRequest) String() string {
 func (*Prepare2PCRequest) ProtoMessage() {}
 
 func (x *Prepare2PCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[43]
+	mi := &file_proto_paxos_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2332,7 +2400,7 @@ func (x *Prepare2PCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Prepare2PCRequest.ProtoReflect.Descriptor instead.
 func (*Prepare2PCRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{43}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *Prepare2PCRequest) GetOriginalRequest() *ClientRequestMessage {
@@ -2352,7 +2420,7 @@ type Prepare2PCResponse struct {
 
 func (x *Prepare2PCResponse) Reset() {
 	*x = Prepare2PCResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[44]
+	mi := &file_proto_paxos_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2364,7 +2432,7 @@ func (x *Prepare2PCResponse) String() string {
 func (*Prepare2PCResponse) ProtoMessage() {}
 
 func (x *Prepare2PCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[44]
+	mi := &file_proto_paxos_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2377,7 +2445,7 @@ func (x *Prepare2PCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Prepare2PCResponse.ProtoReflect.Descriptor instead.
 func (*Prepare2PCResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{44}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *Prepare2PCResponse) GetPrepared() bool {
@@ -2404,7 +2472,7 @@ type CommitOrAbort2PCRequest struct {
 
 func (x *CommitOrAbort2PCRequest) Reset() {
 	*x = CommitOrAbort2PCRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[45]
+	mi := &file_proto_paxos_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2416,7 +2484,7 @@ func (x *CommitOrAbort2PCRequest) String() string {
 func (*CommitOrAbort2PCRequest) ProtoMessage() {}
 
 func (x *CommitOrAbort2PCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[45]
+	mi := &file_proto_paxos_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2429,7 +2497,7 @@ func (x *CommitOrAbort2PCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitOrAbort2PCRequest.ProtoReflect.Descriptor instead.
 func (*CommitOrAbort2PCRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{45}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *CommitOrAbort2PCRequest) GetOriginalRequest() *ClientRequestMessage {
@@ -2456,7 +2524,7 @@ type CommitOrAbort2PCResponse struct {
 
 func (x *CommitOrAbort2PCResponse) Reset() {
 	*x = CommitOrAbort2PCResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[46]
+	mi := &file_proto_paxos_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2468,7 +2536,7 @@ func (x *CommitOrAbort2PCResponse) String() string {
 func (*CommitOrAbort2PCResponse) ProtoMessage() {}
 
 func (x *CommitOrAbort2PCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[46]
+	mi := &file_proto_paxos_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2481,7 +2549,7 @@ func (x *CommitOrAbort2PCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitOrAbort2PCResponse.ProtoReflect.Descriptor instead.
 func (*CommitOrAbort2PCResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{46}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *CommitOrAbort2PCResponse) GetSuccess() bool {
@@ -2508,7 +2576,7 @@ type AcceptMessageFor2PCCommitRequest struct {
 
 func (x *AcceptMessageFor2PCCommitRequest) Reset() {
 	*x = AcceptMessageFor2PCCommitRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[47]
+	mi := &file_proto_paxos_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2520,7 +2588,7 @@ func (x *AcceptMessageFor2PCCommitRequest) String() string {
 func (*AcceptMessageFor2PCCommitRequest) ProtoMessage() {}
 
 func (x *AcceptMessageFor2PCCommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[47]
+	mi := &file_proto_paxos_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2533,7 +2601,7 @@ func (x *AcceptMessageFor2PCCommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptMessageFor2PCCommitRequest.ProtoReflect.Descriptor instead.
 func (*AcceptMessageFor2PCCommitRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{47}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *AcceptMessageFor2PCCommitRequest) GetOriginalRequest() *ClientRequestMessage {
@@ -2559,7 +2627,7 @@ type AcceptMessageFor2PCCommitResponse struct {
 
 func (x *AcceptMessageFor2PCCommitResponse) Reset() {
 	*x = AcceptMessageFor2PCCommitResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[48]
+	mi := &file_proto_paxos_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2571,7 +2639,7 @@ func (x *AcceptMessageFor2PCCommitResponse) String() string {
 func (*AcceptMessageFor2PCCommitResponse) ProtoMessage() {}
 
 func (x *AcceptMessageFor2PCCommitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[48]
+	mi := &file_proto_paxos_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2584,7 +2652,7 @@ func (x *AcceptMessageFor2PCCommitResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use AcceptMessageFor2PCCommitResponse.ProtoReflect.Descriptor instead.
 func (*AcceptMessageFor2PCCommitResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{48}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *AcceptMessageFor2PCCommitResponse) GetSuccess() bool {
@@ -2604,7 +2672,7 @@ type CommitMessageFor2PCCommitRequest struct {
 
 func (x *CommitMessageFor2PCCommitRequest) Reset() {
 	*x = CommitMessageFor2PCCommitRequest{}
-	mi := &file_proto_paxos_proto_msgTypes[49]
+	mi := &file_proto_paxos_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2616,7 +2684,7 @@ func (x *CommitMessageFor2PCCommitRequest) String() string {
 func (*CommitMessageFor2PCCommitRequest) ProtoMessage() {}
 
 func (x *CommitMessageFor2PCCommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[49]
+	mi := &file_proto_paxos_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2629,7 +2697,7 @@ func (x *CommitMessageFor2PCCommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitMessageFor2PCCommitRequest.ProtoReflect.Descriptor instead.
 func (*CommitMessageFor2PCCommitRequest) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{49}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *CommitMessageFor2PCCommitRequest) GetOriginalRequest() *ClientRequestMessage {
@@ -2655,7 +2723,7 @@ type CommitMessageFor2PCCommitResponse struct {
 
 func (x *CommitMessageFor2PCCommitResponse) Reset() {
 	*x = CommitMessageFor2PCCommitResponse{}
-	mi := &file_proto_paxos_proto_msgTypes[50]
+	mi := &file_proto_paxos_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2667,7 +2735,7 @@ func (x *CommitMessageFor2PCCommitResponse) String() string {
 func (*CommitMessageFor2PCCommitResponse) ProtoMessage() {}
 
 func (x *CommitMessageFor2PCCommitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_paxos_proto_msgTypes[50]
+	mi := &file_proto_paxos_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2680,7 +2748,7 @@ func (x *CommitMessageFor2PCCommitResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use CommitMessageFor2PCCommitResponse.ProtoReflect.Descriptor instead.
 func (*CommitMessageFor2PCCommitResponse) Descriptor() ([]byte, []int) {
-	return file_proto_paxos_proto_rawDescGZIP(), []int{50}
+	return file_proto_paxos_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *CommitMessageFor2PCCommitResponse) GetSuccess() bool {
@@ -2796,11 +2864,16 @@ const file_proto_paxos_proto_rawDesc = "" +
 	"\tleader_id\x18\x01 \x01(\x05R\bleaderId\x12:\n" +
 	"\rballot_number\x18\x02 \x01(\v2\x15.banking.BallotNumberR\fballotNumber\"%\n" +
 	"\x11HeartbeatResponse\x12\x10\n" +
-	"\x03ack\x18\x01 \x01(\bR\x03ack\"E\n" +
+	"\x03ack\x18\x01 \x01(\bR\x03ack\"m\n" +
+	" OnlyUpdateAliveNodesAndPeersList\x123\n" +
+	"\x16updated_status_node_id\x18\x01 \x01(\x05R\x13updatedStatusNodeId\x12\x14\n" +
+	"\x05alive\x18\x02 \x01(\bR\x05alive\"\x9f\x02\n" +
 	"\fAliveRequest\x12\x14\n" +
 	"\x05alive\x18\x01 \x01(\bR\x05alive\x12\x1f\n" +
 	"\valive_nodes\x18\x02 \x03(\x05R\n" +
-	"aliveNodes\")\n" +
+	"aliveNodes\x12[\n" +
+	",only_update_alive_nodes_and_alive_peers_list\x18\x03 \x01(\bR%onlyUpdateAliveNodesAndAlivePeersList\x12{\n" +
+	"&only_update_alive_nodes_and_peers_list\x18\x04 \x01(\v2).banking.OnlyUpdateAliveNodesAndPeersListR onlyUpdateAliveNodesAndPeersList\")\n" +
 	"\rAliveResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x12\n" +
 	"\x10PrintViewRequest\"V\n" +
@@ -2907,7 +2980,7 @@ func file_proto_paxos_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_paxos_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_paxos_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
+var file_proto_paxos_proto_msgTypes = make([]protoimpl.MessageInfo, 53)
 var file_proto_paxos_proto_goTypes = []any{
 	(MessageType)(0),                          // 0: banking.MessageType
 	(*Transaction)(nil),                       // 1: banking.Transaction
@@ -2934,35 +3007,36 @@ var file_proto_paxos_proto_goTypes = []any{
 	(*NewViewResponse)(nil),                   // 22: banking.NewViewResponse
 	(*HeartbeatRequest)(nil),                  // 23: banking.HeartbeatRequest
 	(*HeartbeatResponse)(nil),                 // 24: banking.HeartbeatResponse
-	(*AliveRequest)(nil),                      // 25: banking.AliveRequest
-	(*AliveResponse)(nil),                     // 26: banking.AliveResponse
-	(*PrintViewRequest)(nil),                  // 27: banking.PrintViewRequest
-	(*PrintViewResponse)(nil),                 // 28: banking.PrintViewResponse
-	(*FailCurrentLeaderRequest)(nil),          // 29: banking.FailCurrentLeaderRequest
-	(*FailCurrentLeaderResponse)(nil),         // 30: banking.FailCurrentLeaderResponse
-	(*PrintLogRequest)(nil),                   // 31: banking.PrintLogRequest
-	(*PrintLogResponse)(nil),                  // 32: banking.PrintLogResponse
-	(*ActiveCatchUpRequest)(nil),              // 33: banking.ActiveCatchUpRequest
-	(*ActiveCatchUpResponse)(nil),             // 34: banking.ActiveCatchUpResponse
-	(*FlushAndUpdateStatusRequest)(nil),       // 35: banking.FlushAndUpdateStatusRequest
-	(*ReadClientBalanceRequest)(nil),          // 36: banking.ReadClientBalanceRequest
-	(*ReadClientBalanceResponse)(nil),         // 37: banking.ReadClientBalanceResponse
-	(*PrintBalanceRequest)(nil),               // 38: banking.PrintBalanceRequest
-	(*PrintBalanceResponse)(nil),              // 39: banking.PrintBalanceResponse
-	(*GetLeaderLogRequest)(nil),               // 40: banking.GetLeaderLogRequest
-	(*GetLeaderLogResponse)(nil),              // 41: banking.GetLeaderLogResponse
-	(*GetClusterLeaderRequest)(nil),           // 42: banking.GetClusterLeaderRequest
-	(*GetClusterLeaderResponse)(nil),          // 43: banking.GetClusterLeaderResponse
-	(*Prepare2PCRequest)(nil),                 // 44: banking.Prepare2PCRequest
-	(*Prepare2PCResponse)(nil),                // 45: banking.Prepare2PCResponse
-	(*CommitOrAbort2PCRequest)(nil),           // 46: banking.CommitOrAbort2PCRequest
-	(*CommitOrAbort2PCResponse)(nil),          // 47: banking.CommitOrAbort2PCResponse
-	(*AcceptMessageFor2PCCommitRequest)(nil),  // 48: banking.AcceptMessageFor2PCCommitRequest
-	(*AcceptMessageFor2PCCommitResponse)(nil), // 49: banking.AcceptMessageFor2PCCommitResponse
-	(*CommitMessageFor2PCCommitRequest)(nil),  // 50: banking.CommitMessageFor2PCCommitRequest
-	(*CommitMessageFor2PCCommitResponse)(nil), // 51: banking.CommitMessageFor2PCCommitResponse
-	nil,                   // 52: banking.DBResponse.BalancesEntry
-	(*emptypb.Empty)(nil), // 53: google.protobuf.Empty
+	(*OnlyUpdateAliveNodesAndPeersList)(nil),  // 25: banking.OnlyUpdateAliveNodesAndPeersList
+	(*AliveRequest)(nil),                      // 26: banking.AliveRequest
+	(*AliveResponse)(nil),                     // 27: banking.AliveResponse
+	(*PrintViewRequest)(nil),                  // 28: banking.PrintViewRequest
+	(*PrintViewResponse)(nil),                 // 29: banking.PrintViewResponse
+	(*FailCurrentLeaderRequest)(nil),          // 30: banking.FailCurrentLeaderRequest
+	(*FailCurrentLeaderResponse)(nil),         // 31: banking.FailCurrentLeaderResponse
+	(*PrintLogRequest)(nil),                   // 32: banking.PrintLogRequest
+	(*PrintLogResponse)(nil),                  // 33: banking.PrintLogResponse
+	(*ActiveCatchUpRequest)(nil),              // 34: banking.ActiveCatchUpRequest
+	(*ActiveCatchUpResponse)(nil),             // 35: banking.ActiveCatchUpResponse
+	(*FlushAndUpdateStatusRequest)(nil),       // 36: banking.FlushAndUpdateStatusRequest
+	(*ReadClientBalanceRequest)(nil),          // 37: banking.ReadClientBalanceRequest
+	(*ReadClientBalanceResponse)(nil),         // 38: banking.ReadClientBalanceResponse
+	(*PrintBalanceRequest)(nil),               // 39: banking.PrintBalanceRequest
+	(*PrintBalanceResponse)(nil),              // 40: banking.PrintBalanceResponse
+	(*GetLeaderLogRequest)(nil),               // 41: banking.GetLeaderLogRequest
+	(*GetLeaderLogResponse)(nil),              // 42: banking.GetLeaderLogResponse
+	(*GetClusterLeaderRequest)(nil),           // 43: banking.GetClusterLeaderRequest
+	(*GetClusterLeaderResponse)(nil),          // 44: banking.GetClusterLeaderResponse
+	(*Prepare2PCRequest)(nil),                 // 45: banking.Prepare2PCRequest
+	(*Prepare2PCResponse)(nil),                // 46: banking.Prepare2PCResponse
+	(*CommitOrAbort2PCRequest)(nil),           // 47: banking.CommitOrAbort2PCRequest
+	(*CommitOrAbort2PCResponse)(nil),          // 48: banking.CommitOrAbort2PCResponse
+	(*AcceptMessageFor2PCCommitRequest)(nil),  // 49: banking.AcceptMessageFor2PCCommitRequest
+	(*AcceptMessageFor2PCCommitResponse)(nil), // 50: banking.AcceptMessageFor2PCCommitResponse
+	(*CommitMessageFor2PCCommitRequest)(nil),  // 51: banking.CommitMessageFor2PCCommitRequest
+	(*CommitMessageFor2PCCommitResponse)(nil), // 52: banking.CommitMessageFor2PCCommitResponse
+	nil,                   // 53: banking.DBResponse.BalancesEntry
+	(*emptypb.Empty)(nil), // 54: google.protobuf.Empty
 }
 var file_proto_paxos_proto_depIdxs = []int32{
 	0,  // 0: banking.ClientRequestMessage.message_type:type_name -> banking.MessageType
@@ -2986,7 +3060,7 @@ var file_proto_paxos_proto_depIdxs = []int32{
 	0,  // 18: banking.CommitMessageResponse.message_type:type_name -> banking.MessageType
 	2,  // 19: banking.CommitMessageResponse.ballot_number:type_name -> banking.BallotNumber
 	3,  // 20: banking.StatusResponse.client_request_message:type_name -> banking.ClientRequestMessage
-	52, // 21: banking.DBResponse.balances:type_name -> banking.DBResponse.BalancesEntry
+	53, // 21: banking.DBResponse.balances:type_name -> banking.DBResponse.BalancesEntry
 	2,  // 22: banking.LogEntryMessage.ballot_number:type_name -> banking.BallotNumber
 	3,  // 23: banking.LogEntryMessage.client_request:type_name -> banking.ClientRequestMessage
 	16, // 24: banking.LogResponse.entries:type_name -> banking.LogEntryMessage
@@ -2999,67 +3073,68 @@ var file_proto_paxos_proto_depIdxs = []int32{
 	18, // 31: banking.NewViewRequest.accept_log:type_name -> banking.AcceptLogEntry
 	8,  // 32: banking.NewViewResponse.accept_message_response:type_name -> banking.AcceptMessageResponse
 	2,  // 33: banking.HeartbeatRequest.ballot_number:type_name -> banking.BallotNumber
-	21, // 34: banking.PrintViewResponse.new_view_request:type_name -> banking.NewViewRequest
-	16, // 35: banking.PrintLogResponse.log_entry_message:type_name -> banking.LogEntryMessage
-	18, // 36: banking.ActiveCatchUpRequest.accept_log_entries:type_name -> banking.AcceptLogEntry
-	18, // 37: banking.GetLeaderLogResponse.accept_log_entries:type_name -> banking.AcceptLogEntry
-	3,  // 38: banking.Prepare2PCRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 39: banking.CommitOrAbort2PCRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 40: banking.AcceptMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
-	3,  // 41: banking.CommitMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
-	7,  // 42: banking.BankApplication.AcceptMessage:input_type -> banking.AcceptMessageRequest
-	9,  // 43: banking.BankApplication.CommitMessage:input_type -> banking.CommitMessageRequest
-	19, // 44: banking.BankApplication.Prepare:input_type -> banking.PrepareMessage
-	20, // 45: banking.BankApplication.Promise:input_type -> banking.PromiseMessage
-	21, // 46: banking.BankApplication.NewView:input_type -> banking.NewViewRequest
-	23, // 47: banking.BankApplication.Heartbeat:input_type -> banking.HeartbeatRequest
-	25, // 48: banking.BankApplication.UpdateNodeStatus:input_type -> banking.AliveRequest
-	29, // 49: banking.BankApplication.FailCurrentLeader:input_type -> banking.FailCurrentLeaderRequest
-	3,  // 50: banking.BankApplication.HandleClientRequest:input_type -> banking.ClientRequestMessage
-	11, // 51: banking.BankApplication.GetStatus:input_type -> banking.StatusRequest
-	13, // 52: banking.BankApplication.GetDB:input_type -> banking.DBRequest
-	15, // 53: banking.BankApplication.GetLog:input_type -> banking.LogRequest
-	27, // 54: banking.BankApplication.PrintView:input_type -> banking.PrintViewRequest
-	31, // 55: banking.BankApplication.PrintLog:input_type -> banking.PrintLogRequest
-	38, // 56: banking.BankApplication.PrintBalance:input_type -> banking.PrintBalanceRequest
-	33, // 57: banking.BankApplication.PerformActiveCatchUpAsFollower:input_type -> banking.ActiveCatchUpRequest
-	40, // 58: banking.BankApplication.GetLeaderLogForActiveCatching:input_type -> banking.GetLeaderLogRequest
-	35, // 59: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:input_type -> banking.FlushAndUpdateStatusRequest
-	36, // 60: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
-	42, // 61: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
-	44, // 62: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
-	46, // 63: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
-	48, // 64: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
-	50, // 65: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
-	8,  // 66: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
-	10, // 67: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
-	53, // 68: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
-	53, // 69: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
-	22, // 70: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
-	24, // 71: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
-	26, // 72: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
-	30, // 73: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
-	5,  // 74: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
-	12, // 75: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
-	14, // 76: banking.BankApplication.GetDB:output_type -> banking.DBResponse
-	17, // 77: banking.BankApplication.GetLog:output_type -> banking.LogResponse
-	28, // 78: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
-	32, // 79: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
-	39, // 80: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
-	34, // 81: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
-	41, // 82: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
-	53, // 83: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
-	37, // 84: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
-	43, // 85: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
-	45, // 86: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
-	47, // 87: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
-	49, // 88: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
-	51, // 89: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
-	66, // [66:90] is the sub-list for method output_type
-	42, // [42:66] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	25, // 34: banking.AliveRequest.only_update_alive_nodes_and_peers_list:type_name -> banking.OnlyUpdateAliveNodesAndPeersList
+	21, // 35: banking.PrintViewResponse.new_view_request:type_name -> banking.NewViewRequest
+	16, // 36: banking.PrintLogResponse.log_entry_message:type_name -> banking.LogEntryMessage
+	18, // 37: banking.ActiveCatchUpRequest.accept_log_entries:type_name -> banking.AcceptLogEntry
+	18, // 38: banking.GetLeaderLogResponse.accept_log_entries:type_name -> banking.AcceptLogEntry
+	3,  // 39: banking.Prepare2PCRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 40: banking.CommitOrAbort2PCRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 41: banking.AcceptMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
+	3,  // 42: banking.CommitMessageFor2PCCommitRequest.original_request:type_name -> banking.ClientRequestMessage
+	7,  // 43: banking.BankApplication.AcceptMessage:input_type -> banking.AcceptMessageRequest
+	9,  // 44: banking.BankApplication.CommitMessage:input_type -> banking.CommitMessageRequest
+	19, // 45: banking.BankApplication.Prepare:input_type -> banking.PrepareMessage
+	20, // 46: banking.BankApplication.Promise:input_type -> banking.PromiseMessage
+	21, // 47: banking.BankApplication.NewView:input_type -> banking.NewViewRequest
+	23, // 48: banking.BankApplication.Heartbeat:input_type -> banking.HeartbeatRequest
+	26, // 49: banking.BankApplication.UpdateNodeStatus:input_type -> banking.AliveRequest
+	30, // 50: banking.BankApplication.FailCurrentLeader:input_type -> banking.FailCurrentLeaderRequest
+	3,  // 51: banking.BankApplication.HandleClientRequest:input_type -> banking.ClientRequestMessage
+	11, // 52: banking.BankApplication.GetStatus:input_type -> banking.StatusRequest
+	13, // 53: banking.BankApplication.GetDB:input_type -> banking.DBRequest
+	15, // 54: banking.BankApplication.GetLog:input_type -> banking.LogRequest
+	28, // 55: banking.BankApplication.PrintView:input_type -> banking.PrintViewRequest
+	32, // 56: banking.BankApplication.PrintLog:input_type -> banking.PrintLogRequest
+	39, // 57: banking.BankApplication.PrintBalance:input_type -> banking.PrintBalanceRequest
+	34, // 58: banking.BankApplication.PerformActiveCatchUpAsFollower:input_type -> banking.ActiveCatchUpRequest
+	41, // 59: banking.BankApplication.GetLeaderLogForActiveCatching:input_type -> banking.GetLeaderLogRequest
+	36, // 60: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:input_type -> banking.FlushAndUpdateStatusRequest
+	37, // 61: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
+	43, // 62: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
+	45, // 63: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
+	47, // 64: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
+	49, // 65: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
+	51, // 66: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
+	8,  // 67: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
+	10, // 68: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
+	54, // 69: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
+	54, // 70: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
+	22, // 71: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
+	24, // 72: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
+	27, // 73: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
+	31, // 74: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
+	5,  // 75: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
+	12, // 76: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
+	14, // 77: banking.BankApplication.GetDB:output_type -> banking.DBResponse
+	17, // 78: banking.BankApplication.GetLog:output_type -> banking.LogResponse
+	29, // 79: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
+	33, // 80: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
+	40, // 81: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
+	35, // 82: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
+	42, // 83: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
+	54, // 84: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
+	38, // 85: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
+	44, // 86: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
+	46, // 87: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
+	48, // 88: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
+	50, // 89: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
+	52, // 90: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
+	67, // [67:91] is the sub-list for method output_type
+	43, // [43:67] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_proto_paxos_proto_init() }
@@ -3073,7 +3148,7 @@ func file_proto_paxos_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_paxos_proto_rawDesc), len(file_proto_paxos_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   52,
+			NumMessages:   53,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

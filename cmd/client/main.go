@@ -40,6 +40,7 @@ func startClientControlServer(cm *client.ClientManager) {
 	}
 }
 
+// CSE535-F25-Project-3-Testcases
 func main() {
 	sets := client.ParseCSV("C:/Users/skotha/Downloads/Proj-3_TC.csv")
 
@@ -158,7 +159,13 @@ func main() {
 
 		time.Sleep(3 * time.Second)
 
+		client.BeginPerformance()
 		cm.RunSet(set.Transactions)
+		client.EndPerformance()
+
+		// persist snapshot for this set so it can be retrieved any time later
+		thr, avg, ops := client.LastPerformance()
+		client.StoreSetPerformance(setNum, thr, avg, ops)
 	}
 	fmt.Println("\nAll sets completed. Press ENTER to stop the client server...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')

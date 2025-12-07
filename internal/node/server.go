@@ -151,9 +151,11 @@ func (s *NodeServer) handleIntraShardTransaction(
 	var senderNodes []int32
 	senderNodes = common.GetNodesBasedOnClusterID(int32(currentCluster))
 
-	aliveNodes := s.node.AliveNodes
+	if common.CountAliveNodes(senderNodes, s.node.AliveNodes) < (common.F + 1) {
+		if req.GetTransaction() != nil {
+			log.Printf("[Intra Shard] Less than majority nodes are alive for trnscn: %s -> %s: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount())
+		}
 
-	if common.CountAliveNodes(senderNodes, aliveNodes) < (common.F + 1) {
 		return nil, nil
 	}
 
@@ -275,10 +277,14 @@ func (s *NodeServer) handleCrossShardTransaction(
 	recieverNodes = common.GetNodesBasedOnClusterID(int32(receiverCluster))
 	senderNodes = common.GetNodesBasedOnClusterID(int32(senderCluster))
 
-	aliveNodes := s.node.AliveNodes
-
-	if common.CountAliveNodes(recieverNodes, aliveNodes) < (common.F+1) ||
-		common.CountAliveNodes(senderNodes, aliveNodes) < (common.F+1) {
+	countOfAliveRecieverNodes := common.CountAliveNodes(recieverNodes, s.node.AliveNodes)
+	countOfAliveSenderNodes := common.CountAliveNodes(senderNodes, s.node.AliveNodes)
+	log.Printf("[Cross Shard] Trnscn: %s -> %s: %d, countOfAliveRecieverNodes: %d, countOfAliveSenderNodes: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount(), countOfAliveRecieverNodes, countOfAliveSenderNodes)
+	if common.CountAliveNodes(recieverNodes, s.node.AliveNodes) < (common.F+1) ||
+		common.CountAliveNodes(senderNodes, s.node.AliveNodes) < (common.F+1) {
+		if req.GetTransaction() != nil {
+			log.Printf("[Cross Shard] Less than majority nodes are alive for trnscn: %s -> %s: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount())
+		}
 		return nil, nil
 	}
 
@@ -850,6 +856,34 @@ func (s *NodeServer) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*
 func (s *NodeServer) UpdateNodeStatus(ctx context.Context, req *pb.AliveRequest) (*pb.AliveResponse, error) {
 	n := s.node
 
+	if req.OnlyUpdateAliveNodesAndAlivePeersList {
+		updateStatusNodeID := req.OnlyUpdateAliveNodesAndPeersList.UpdatedStatusNodeId
+		updatedStatus := req.OnlyUpdateAliveNodesAndPeersList.Alive
+		if updatedStatus {
+			found := false
+			for _, id := range n.AliveNodes {
+				if id == updateStatusNodeID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				n.AliveNodes = append(n.AliveNodes, updateStatusNodeID)
+			}
+			n.AliveClusterPeers[updateStatusNodeID] = n.Peers[updateStatusNodeID]
+		} else {
+			newList := make([]int32, 0, len(n.AliveNodes))
+			for _, id := range n.AliveNodes {
+				if id != updateStatusNodeID {
+					newList = append(newList, id)
+				}
+			}
+			n.AliveNodes = newList
+			delete(n.AliveClusterPeers, updateStatusNodeID)
+		}
+		return nil, nil
+	}
+
 	wasAlive := n.isAlive
 	wasLeader := n.IsLeader
 
@@ -1032,6 +1066,10 @@ func (s *NodeServer) GetLeaderLogForActiveCatching(ctx context.Context, req *pb.
 }
 
 func (s *NodeServer) ReadClientBalance(ctx context.Context, req *pb.ReadClientBalanceRequest) (*pb.ReadClientBalanceResponse, error) {
+	n := s.node
+	if !n.isAlive {
+		return nil, status.Error(codes.Unavailable, "node is not alive")
+	}
 	balance := s.node.Balances[req.GetClientId()]
 	resp := &pb.ReadClientBalanceResponse{
 		Balance: balance,
@@ -1465,10 +1503,8 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 		c, _ := database.GetShardMapping(acc)
 		if c == myClusterLocal {
 			key := strconv.Itoa(acc)
-			if _, ok := balances[key]; !ok {
-				balances[key] = 10
-				_ = database.UpdateClientBalance(s.node.ID, key, balances[key])
-			}
+			balances[key] = 10
+			_ = database.UpdateClientBalance(s.node.ID, key, balances[key])
 		}
 	}
 	n.Balances = balances

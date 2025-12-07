@@ -202,24 +202,30 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 			go func(tx *Txn) {
 				defer wg.Done()
 
+				start := time.Now()
+				var okExec bool
+
 				switch tx.Command.Type {
 				case CommandTypeTransfer:
 					client, ok := cm.Clients[tx.Sender]
 					if !ok {
 						return
 					}
-					client.SendTransaction(tx, cm.peers)
+					okExec = client.SendTransaction(tx, cm.peers)
 
 				case CommandTypeRead:
 					client, ok := cm.Clients[tx.Sender]
 					if !ok {
 						return
 					}
-					client.SendRead(tx, cm.peers)
+					okExec = client.SendRead(tx, cm.peers)
 
 				default:
 					log.Printf("[RunSet] Unexpected non-F/R command type in concurrent block: %+v", tx.Command.Type)
+					return
 				}
+
+				RecordPerf(okExec, time.Since(start))
 			}(tx)
 
 			i++
@@ -271,49 +277,117 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 //	//wg.Wait()
 //}
 
+//func (cm *ClientManager) UpdateNodeStatus(tx *Txn) {
+//	nodeID := tx.Command.NodeID
+//
+//	addr, ok := cm.peers[nodeID]
+//	if !ok {
+//		log.Printf("[UpdateNodeStatus] unknown nodeID %d in command %v", nodeID, tx.Command.Type)
+//		return
+//	}
+//
+//	alive := tx.Command.Type == CommandTypeRecover
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+//	defer cancel()
+//
+//	conn, err := grpc.NewClient(
+//		addr,
+//		grpc.WithTransportCredentials(insecure.NewCredentials()),
+//	)
+//	if err != nil {
+//		log.Printf("[UpdateNodeStatus] failed to connect to node %d (%s): %v", nodeID, addr, err)
+//		return
+//	}
+//	defer conn.Close()
+//
+//	node := pb.NewBankApplicationClient(conn)
+//
+//	req := &pb.AliveRequest{
+//		Alive: alive,
+//	}
+//
+//	resp, err := node.UpdateNodeStatus(ctx, req)
+//	if err != nil {
+//		log.Printf("[UpdateNodeStatus] RPC to node %d (%s) failed: %v", nodeID, addr, err)
+//		return
+//	}
+//
+//	if resp != nil && resp.Success {
+//		action := "FAIL"
+//		if alive {
+//			action = "RECOVER"
+//		}
+//		log.Printf("[UpdateNodeStatus] node %d updated successfully (%s)", nodeID, action)
+//	} else {
+//		log.Printf("[UpdateNodeStatus] node %d did not acknowledge status update", nodeID)
+//	}
+//}
+
 func (cm *ClientManager) UpdateNodeStatus(tx *Txn) {
-	nodeID := tx.Command.NodeID
-
-	addr, ok := cm.peers[nodeID]
-	if !ok {
-		log.Printf("[UpdateNodeStatus] unknown nodeID %d in command %v", nodeID, tx.Command.Type)
-		return
-	}
-
+	failedOrRecoveredNodeID := tx.Command.NodeID
 	alive := tx.Command.Type == CommandTypeRecover
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	var wg sync.WaitGroup
 
-	conn, err := grpc.NewClient(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Printf("[UpdateNodeStatus] failed to connect to node %d (%s): %v", nodeID, addr, err)
-		return
+	for peerID, addr := range cm.peers {
+		wg.Add(1)
+
+		go func(peerID int32, addr string) {
+			defer wg.Done()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			conn, err := grpc.NewClient(
+				addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			if err != nil {
+				if peerID == failedOrRecoveredNodeID {
+					log.Printf("[UpdateNodeStatus] failed to connect to node %d (%s): %v",
+						peerID, addr, err)
+				}
+				return
+			}
+			defer conn.Close()
+
+			node := pb.NewBankApplicationClient(conn)
+
+			onlyUpdatePeersAndAliveList := peerID != failedOrRecoveredNodeID
+
+			req := &pb.AliveRequest{
+				Alive:                                 alive,
+				OnlyUpdateAliveNodesAndAlivePeersList: onlyUpdatePeersAndAliveList,
+				OnlyUpdateAliveNodesAndPeersList: &pb.OnlyUpdateAliveNodesAndPeersList{
+					UpdatedStatusNodeId: failedOrRecoveredNodeID,
+					Alive:               alive,
+				},
+			}
+
+			resp, err := node.UpdateNodeStatus(ctx, req)
+			if err != nil {
+				if peerID == failedOrRecoveredNodeID {
+					log.Printf("[UpdateNodeStatus] RPC to node %d (%s) failed: %v",
+						peerID, addr, err)
+				}
+				return
+			}
+
+			if peerID == failedOrRecoveredNodeID {
+				if resp != nil && resp.Success {
+					action := "FAIL"
+					if alive {
+						action = "RECOVER"
+					}
+					log.Printf("[UpdateNodeStatus] node %d updated successfully (%s)", peerID, action)
+				} else {
+					log.Printf("[UpdateNodeStatus] node %d did not acknowledge status update", peerID)
+				}
+			}
+
+		}(peerID, addr)
 	}
-	defer conn.Close()
 
-	node := pb.NewBankApplicationClient(conn)
-
-	req := &pb.AliveRequest{
-		Alive: alive,
-	}
-
-	resp, err := node.UpdateNodeStatus(ctx, req)
-	if err != nil {
-		log.Printf("[UpdateNodeStatus] RPC to node %d (%s) failed: %v", nodeID, addr, err)
-		return
-	}
-
-	if resp != nil && resp.Success {
-		action := "FAIL"
-		if alive {
-			action = "RECOVER"
-		}
-		log.Printf("[UpdateNodeStatus] node %d updated successfully (%s)", nodeID, action)
-	} else {
-		log.Printf("[UpdateNodeStatus] node %d did not acknowledge status update", nodeID)
-	}
+	wg.Wait()
 }

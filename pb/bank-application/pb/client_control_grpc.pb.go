@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ClientControl_GetReshardPlan_FullMethodName = "/banking.ClientControl/GetReshardPlan"
+	ClientControl_Performance_FullMethodName    = "/banking.ClientControl/Performance"
 )
 
 // ClientControlClient is the client API for ClientControl service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ClientControlClient interface {
 	GetReshardPlan(ctx context.Context, in *GetReshardPlanRequest, opts ...grpc.CallOption) (*GetReshardPlanResponse, error)
+	Performance(ctx context.Context, in *PerformanceRequest, opts ...grpc.CallOption) (*PerformanceResponse, error)
 }
 
 type clientControlClient struct {
@@ -47,11 +49,22 @@ func (c *clientControlClient) GetReshardPlan(ctx context.Context, in *GetReshard
 	return out, nil
 }
 
+func (c *clientControlClient) Performance(ctx context.Context, in *PerformanceRequest, opts ...grpc.CallOption) (*PerformanceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PerformanceResponse)
+	err := c.cc.Invoke(ctx, ClientControl_Performance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClientControlServer is the server API for ClientControl service.
 // All implementations must embed UnimplementedClientControlServer
 // for forward compatibility.
 type ClientControlServer interface {
 	GetReshardPlan(context.Context, *GetReshardPlanRequest) (*GetReshardPlanResponse, error)
+	Performance(context.Context, *PerformanceRequest) (*PerformanceResponse, error)
 	mustEmbedUnimplementedClientControlServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedClientControlServer struct{}
 
 func (UnimplementedClientControlServer) GetReshardPlan(context.Context, *GetReshardPlanRequest) (*GetReshardPlanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReshardPlan not implemented")
+}
+func (UnimplementedClientControlServer) Performance(context.Context, *PerformanceRequest) (*PerformanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Performance not implemented")
 }
 func (UnimplementedClientControlServer) mustEmbedUnimplementedClientControlServer() {}
 func (UnimplementedClientControlServer) testEmbeddedByValue()                       {}
@@ -104,6 +120,24 @@ func _ClientControl_GetReshardPlan_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientControl_Performance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PerformanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientControlServer).Performance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientControl_Performance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientControlServer).Performance(ctx, req.(*PerformanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClientControl_ServiceDesc is the grpc.ServiceDesc for ClientControl service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var ClientControl_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReshardPlan",
 			Handler:    _ClientControl_GetReshardPlan_Handler,
+		},
+		{
+			MethodName: "Performance",
+			Handler:    _ClientControl_Performance_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

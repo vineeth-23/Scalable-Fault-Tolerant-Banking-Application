@@ -28,6 +28,33 @@ var peers = map[int32]string{
 	9: "localhost:50059",
 }
 
+func PrintPerformance() {
+	conn, err := grpc.NewClient(
+		clientControlAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Printf("failed to connect to client-control server at %s: %v", clientControlAddr, err)
+		return
+	}
+	defer conn.Close()
+
+	ctrl := pb.NewClientControlClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := ctrl.Performance(ctx, &pb.PerformanceRequest{})
+	if err != nil {
+		log.Printf("Performance RPC failed: %v", err)
+		return
+	}
+
+	fmt.Printf("\n[Performance]\n")
+	fmt.Printf("Throughput: %.2f ops/sec\n", resp.GetThroughput())
+	fmt.Printf("Average latency: %.2f ms\n", resp.GetAvgLatencyMs())
+	fmt.Printf("Ops counted: %d\n", resp.GetOps())
+}
+
 const clientControlAddr = "localhost:6000"
 
 func PrintDB(nodeID int32) {
@@ -404,6 +431,9 @@ func main() {
 
 	case "reshard":
 		PrintReshard()
+
+	case "performance":
+		PrintPerformance()
 
 	default:
 		log.Fatalf("Unknown mode: %s", *mode)

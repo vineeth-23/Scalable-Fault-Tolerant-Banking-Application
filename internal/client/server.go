@@ -35,3 +35,15 @@ func (s *ClientControlServer) GetReshardPlan(
 
 	return resp, nil
 }
+
+func (s *ClientControlServer) Performance(
+	ctx context.Context,
+	req *pb.PerformanceRequest,
+) (*pb.PerformanceResponse, error) {
+	thr, avg, ops := LastPerformance()
+	return &pb.PerformanceResponse{
+		Throughput:   thr,
+		AvgLatencyMs: avg,
+		Ops:          int32(ops),
+	}, nil
+}

@@ -195,6 +195,8 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 	select {
 	case <-respCh:
 		// success
+		cancel2()
+		return true
 	case <-ctx2.Done():
 		// failed
 	}
@@ -285,7 +287,7 @@ func (c *Client) handleReadRPC(ctx context.Context, addr string, tx *Txn) bool {
 
 	resp, err := node.ReadClientBalance(ctx, req)
 	if err != nil {
-		log.Printf("[Client %s] READ RPC to %s failed: %v", c.ID, addr, err)
+		//log.Printf("[Client %s] READ RPC to %s failed: %v", c.ID, addr, err)
 		return false
 	}
 
