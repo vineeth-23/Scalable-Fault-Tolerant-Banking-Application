@@ -2,12 +2,9 @@ package client
 
 import (
 	"bank-application/internal/database"
-	"log"
 	"sort"
 	"strconv"
 )
-
-// reshard.go (client package)
 
 const (
 	totalAccounts  = 9000
@@ -42,7 +39,7 @@ func (cm *ClientManager) ComputeReshardMoves() []ReshardMove {
 		adj[b][a]++
 	}
 
-	log.Printf("[Reshard] Processing %d transactions", len(cm.AllExecutedTransferTransactions))
+	//log.Printf("[Reshard] Processing %d transactions", len(cm.AllExecutedTransferTransactions))
 
 	for _, tx := range cm.AllExecutedTransferTransactions {
 		if tx == nil {

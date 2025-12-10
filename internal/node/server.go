@@ -280,11 +280,12 @@ func (s *NodeServer) handleCrossShardTransaction(
 	recieverNodes = common.GetNodesBasedOnClusterID(int32(receiverCluster))
 	senderNodes = common.GetNodesBasedOnClusterID(int32(senderCluster))
 
-	countOfAliveRecieverNodes := common.CountAliveNodes(recieverNodes, s.node.AliveNodes)
-	countOfAliveSenderNodes := common.CountAliveNodes(senderNodes, s.node.AliveNodes)
-	log.Printf("[Cross Shard] Trnscn: %s -> %s: %d, countOfAliveRecieverNodes: %d, countOfAliveSenderNodes: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount(), countOfAliveRecieverNodes, countOfAliveSenderNodes)
+	//countOfAliveRecieverNodes := common.CountAliveNodes(recieverNodes, s.node.AliveNodes)
+	//countOfAliveSenderNodes := common.CountAliveNodes(senderNodes, s.node.AliveNodes)
+	//log.Printf("[Cross Shard] Trnscn: %s -> %s: %d, countOfAliveRecieverNodes: %d, countOfAliveSenderNodes: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount(), countOfAliveRecieverNodes, countOfAliveSenderNodes)
 	if common.CountAliveNodes(recieverNodes, s.node.AliveNodes) < (common.F+1) ||
 		common.CountAliveNodes(senderNodes, s.node.AliveNodes) < (common.F+1) {
+		s.node.addLogForAbort(req)
 		if req.GetTransaction() != nil {
 			log.Printf("[Cross Shard] Less than majority nodes are alive for trnscn: %s -> %s: %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount())
 		}
@@ -1588,5 +1589,14 @@ func (s *NodeServer) FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, 
 		n.ScheduleNextElection()
 	}
 
+	return &emptypb.Empty{}, nil
+}
+
+func (s *NodeServer) ScheduleNextElectionDuringStartOfSet(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	n := s.node
+	log.Printf("Is alive: %v", n.isAlive)
+	if n.isAlive {
+		n.ScheduleNextElection()
+	}
 	return &emptypb.Empty{}, nil
 }

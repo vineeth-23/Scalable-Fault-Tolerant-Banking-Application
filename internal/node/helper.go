@@ -401,3 +401,8 @@ func (n *Node) clientIDForThisNode(req *pb.ClientRequestMessage) string {
 
 	return ""
 }
+
+func (n *Node) addLogForAbort(req *pb.ClientRequestMessage) {
+	n.recordMessageLocked("ACCEPT-ABORT", "SEND", nil, 0, req)
+	n.recordMessageLocked("ACCEPT-ABORT", "RECV", nil, 0, req)
+}

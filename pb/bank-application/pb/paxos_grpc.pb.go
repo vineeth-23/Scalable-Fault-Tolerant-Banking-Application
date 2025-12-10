@@ -38,6 +38,7 @@ const (
 	BankApplication_PerformActiveCatchUpAsFollower_FullMethodName        = "/banking.BankApplication/PerformActiveCatchUpAsFollower"
 	BankApplication_GetLeaderLogForActiveCatching_FullMethodName         = "/banking.BankApplication/GetLeaderLogForActiveCatching"
 	BankApplication_FlushPreviousDataAndUpdatePeersStatus_FullMethodName = "/banking.BankApplication/FlushPreviousDataAndUpdatePeersStatus"
+	BankApplication_ScheduleNextElectionDuringStartOfSet_FullMethodName  = "/banking.BankApplication/ScheduleNextElectionDuringStartOfSet"
 	BankApplication_ReadClientBalance_FullMethodName                     = "/banking.BankApplication/ReadClientBalance"
 	BankApplication_GetClusterLeader_FullMethodName                      = "/banking.BankApplication/GetClusterLeader"
 	BankApplication_Prepare2PC_FullMethodName                            = "/banking.BankApplication/Prepare2PC"
@@ -71,6 +72,7 @@ type BankApplicationClient interface {
 	PerformActiveCatchUpAsFollower(ctx context.Context, in *ActiveCatchUpRequest, opts ...grpc.CallOption) (*ActiveCatchUpResponse, error)
 	GetLeaderLogForActiveCatching(ctx context.Context, in *GetLeaderLogRequest, opts ...grpc.CallOption) (*GetLeaderLogResponse, error)
 	FlushPreviousDataAndUpdatePeersStatus(ctx context.Context, in *FlushAndUpdateStatusRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ScheduleNextElectionDuringStartOfSet(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ReadClientBalance(ctx context.Context, in *ReadClientBalanceRequest, opts ...grpc.CallOption) (*ReadClientBalanceResponse, error)
 	// 2PC
 	GetClusterLeader(ctx context.Context, in *GetClusterLeaderRequest, opts ...grpc.CallOption) (*GetClusterLeaderResponse, error)
@@ -268,6 +270,16 @@ func (c *bankApplicationClient) FlushPreviousDataAndUpdatePeersStatus(ctx contex
 	return out, nil
 }
 
+func (c *bankApplicationClient) ScheduleNextElectionDuringStartOfSet(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, BankApplication_ScheduleNextElectionDuringStartOfSet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *bankApplicationClient) ReadClientBalance(ctx context.Context, in *ReadClientBalanceRequest, opts ...grpc.CallOption) (*ReadClientBalanceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReadClientBalanceResponse)
@@ -353,6 +365,7 @@ type BankApplicationServer interface {
 	PerformActiveCatchUpAsFollower(context.Context, *ActiveCatchUpRequest) (*ActiveCatchUpResponse, error)
 	GetLeaderLogForActiveCatching(context.Context, *GetLeaderLogRequest) (*GetLeaderLogResponse, error)
 	FlushPreviousDataAndUpdatePeersStatus(context.Context, *FlushAndUpdateStatusRequest) (*emptypb.Empty, error)
+	ScheduleNextElectionDuringStartOfSet(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	ReadClientBalance(context.Context, *ReadClientBalanceRequest) (*ReadClientBalanceResponse, error)
 	// 2PC
 	GetClusterLeader(context.Context, *GetClusterLeaderRequest) (*GetClusterLeaderResponse, error)
@@ -423,6 +436,9 @@ func (UnimplementedBankApplicationServer) GetLeaderLogForActiveCatching(context.
 }
 func (UnimplementedBankApplicationServer) FlushPreviousDataAndUpdatePeersStatus(context.Context, *FlushAndUpdateStatusRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FlushPreviousDataAndUpdatePeersStatus not implemented")
+}
+func (UnimplementedBankApplicationServer) ScheduleNextElectionDuringStartOfSet(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ScheduleNextElectionDuringStartOfSet not implemented")
 }
 func (UnimplementedBankApplicationServer) ReadClientBalance(context.Context, *ReadClientBalanceRequest) (*ReadClientBalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadClientBalance not implemented")
@@ -787,6 +803,24 @@ func _BankApplication_FlushPreviousDataAndUpdatePeersStatus_Handler(srv interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BankApplication_ScheduleNextElectionDuringStartOfSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BankApplicationServer).ScheduleNextElectionDuringStartOfSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BankApplication_ScheduleNextElectionDuringStartOfSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BankApplicationServer).ScheduleNextElectionDuringStartOfSet(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BankApplication_ReadClientBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReadClientBalanceRequest)
 	if err := dec(in); err != nil {
@@ -973,6 +1007,10 @@ var BankApplication_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FlushPreviousDataAndUpdatePeersStatus",
 			Handler:    _BankApplication_FlushPreviousDataAndUpdatePeersStatus_Handler,
+		},
+		{
+			MethodName: "ScheduleNextElectionDuringStartOfSet",
+			Handler:    _BankApplication_ScheduleNextElectionDuringStartOfSet_Handler,
 		},
 		{
 			MethodName: "ReadClientBalance",

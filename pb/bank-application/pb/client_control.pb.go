@@ -210,6 +210,9 @@ type PerformanceResponse struct {
 	Throughput    float64                `protobuf:"fixed64,1,opt,name=throughput,proto3" json:"throughput,omitempty"`
 	AvgLatencyMs  float64                `protobuf:"fixed64,2,opt,name=avg_latency_ms,json=avgLatencyMs,proto3" json:"avg_latency_ms,omitempty"`
 	Ops           int32                  `protobuf:"varint,3,opt,name=ops,proto3" json:"ops,omitempty"`
+	P50LatencyMs  float64                `protobuf:"fixed64,4,opt,name=p50_latency_ms,json=p50LatencyMs,proto3" json:"p50_latency_ms,omitempty"`
+	P95LatencyMs  float64                `protobuf:"fixed64,5,opt,name=p95_latency_ms,json=p95LatencyMs,proto3" json:"p95_latency_ms,omitempty"`
+	P99LatencyMs  float64                `protobuf:"fixed64,6,opt,name=p99_latency_ms,json=p99LatencyMs,proto3" json:"p99_latency_ms,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -265,6 +268,27 @@ func (x *PerformanceResponse) GetOps() int32 {
 	return 0
 }
 
+func (x *PerformanceResponse) GetP50LatencyMs() float64 {
+	if x != nil {
+		return x.P50LatencyMs
+	}
+	return 0
+}
+
+func (x *PerformanceResponse) GetP95LatencyMs() float64 {
+	if x != nil {
+		return x.P95LatencyMs
+	}
+	return 0
+}
+
+func (x *PerformanceResponse) GetP99LatencyMs() float64 {
+	if x != nil {
+		return x.P99LatencyMs
+	}
+	return 0
+}
+
 var File_proto_client_control_proto protoreflect.FileDescriptor
 
 const file_proto_client_control_proto_rawDesc = "" +
@@ -279,13 +303,16 @@ const file_proto_client_control_proto_rawDesc = "" +
 	"\x16GetReshardPlanResponse\x12*\n" +
 	"\x05moves\x18\x01 \x03(\v2\x14.banking.ReshardMoveR\x05moves\"&\n" +
 	"\x12PerformanceRequest\x12\x10\n" +
-	"\x03set\x18\x01 \x01(\x05R\x03set\"m\n" +
+	"\x03set\x18\x01 \x01(\x05R\x03set\"\xdf\x01\n" +
 	"\x13PerformanceResponse\x12\x1e\n" +
 	"\n" +
 	"throughput\x18\x01 \x01(\x01R\n" +
 	"throughput\x12$\n" +
 	"\x0eavg_latency_ms\x18\x02 \x01(\x01R\favgLatencyMs\x12\x10\n" +
-	"\x03ops\x18\x03 \x01(\x05R\x03ops2\xac\x01\n" +
+	"\x03ops\x18\x03 \x01(\x05R\x03ops\x12$\n" +
+	"\x0ep50_latency_ms\x18\x04 \x01(\x01R\fp50LatencyMs\x12$\n" +
+	"\x0ep95_latency_ms\x18\x05 \x01(\x01R\fp95LatencyMs\x12$\n" +
+	"\x0ep99_latency_ms\x18\x06 \x01(\x01R\fp99LatencyMs2\xac\x01\n" +
 	"\rClientControl\x12Q\n" +
 	"\x0eGetReshardPlan\x12\x1e.banking.GetReshardPlanRequest\x1a\x1f.banking.GetReshardPlanResponse\x12H\n" +
 	"\vPerformance\x12\x1b.banking.PerformanceRequest\x1a\x1c.banking.PerformanceResponseB\x18Z\x16pb/bank-application/pbb\x06proto3"

@@ -243,7 +243,6 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 			go func(tx *Txn) {
 				defer wg.Done()
 
-				start := time.Now()
 				var okExec bool
 
 				switch tx.Command.Type {
@@ -266,7 +265,6 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 					return
 				}
 
-				RecordPerf(okExec, time.Since(start))
 				if !okExec {
 					cm.AddToRetryQueue(tx)
 				}

@@ -2939,7 +2939,7 @@ const file_proto_paxos_proto_rawDesc = "" +
 	"\x06COMMIT\x10\x04\x12\f\n" +
 	"\bCOMMITED\x10\x05\x12\v\n" +
 	"\aEXECUTE\x10\x06\x12\f\n" +
-	"\bEXECUTED\x10\a2\xfa\x0e\n" +
+	"\bEXECUTED\x10\a2\xd2\x0f\n" +
 	"\x0fBankApplication\x12N\n" +
 	"\rAcceptMessage\x12\x1d.banking.AcceptMessageRequest\x1a\x1e.banking.AcceptMessageResponse\x12N\n" +
 	"\rCommitMessage\x12\x1d.banking.CommitMessageRequest\x1a\x1e.banking.CommitMessageResponse\x12:\n" +
@@ -2958,7 +2958,8 @@ const file_proto_paxos_proto_rawDesc = "" +
 	"\fPrintBalance\x12\x1c.banking.PrintBalanceRequest\x1a\x1d.banking.PrintBalanceResponse\x12_\n" +
 	"\x1ePerformActiveCatchUpAsFollower\x12\x1d.banking.ActiveCatchUpRequest\x1a\x1e.banking.ActiveCatchUpResponse\x12\\\n" +
 	"\x1dGetLeaderLogForActiveCatching\x12\x1c.banking.GetLeaderLogRequest\x1a\x1d.banking.GetLeaderLogResponse\x12e\n" +
-	"%FlushPreviousDataAndUpdatePeersStatus\x12$.banking.FlushAndUpdateStatusRequest\x1a\x16.google.protobuf.Empty\x12Z\n" +
+	"%FlushPreviousDataAndUpdatePeersStatus\x12$.banking.FlushAndUpdateStatusRequest\x1a\x16.google.protobuf.Empty\x12V\n" +
+	"$ScheduleNextElectionDuringStartOfSet\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\x12Z\n" +
 	"\x11ReadClientBalance\x12!.banking.ReadClientBalanceRequest\x1a\".banking.ReadClientBalanceResponse\x12W\n" +
 	"\x10GetClusterLeader\x12 .banking.GetClusterLeaderRequest\x1a!.banking.GetClusterLeaderResponse\x12E\n" +
 	"\n" +
@@ -3100,38 +3101,40 @@ var file_proto_paxos_proto_depIdxs = []int32{
 	34, // 58: banking.BankApplication.PerformActiveCatchUpAsFollower:input_type -> banking.ActiveCatchUpRequest
 	41, // 59: banking.BankApplication.GetLeaderLogForActiveCatching:input_type -> banking.GetLeaderLogRequest
 	36, // 60: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:input_type -> banking.FlushAndUpdateStatusRequest
-	37, // 61: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
-	43, // 62: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
-	45, // 63: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
-	47, // 64: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
-	49, // 65: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
-	51, // 66: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
-	8,  // 67: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
-	10, // 68: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
-	54, // 69: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
-	54, // 70: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
-	22, // 71: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
-	24, // 72: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
-	27, // 73: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
-	31, // 74: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
-	5,  // 75: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
-	12, // 76: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
-	14, // 77: banking.BankApplication.GetDB:output_type -> banking.DBResponse
-	17, // 78: banking.BankApplication.GetLog:output_type -> banking.LogResponse
-	29, // 79: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
-	33, // 80: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
-	40, // 81: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
-	35, // 82: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
-	42, // 83: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
-	54, // 84: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
-	38, // 85: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
-	44, // 86: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
-	46, // 87: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
-	48, // 88: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
-	50, // 89: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
-	52, // 90: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
-	67, // [67:91] is the sub-list for method output_type
-	43, // [43:67] is the sub-list for method input_type
+	54, // 61: banking.BankApplication.ScheduleNextElectionDuringStartOfSet:input_type -> google.protobuf.Empty
+	37, // 62: banking.BankApplication.ReadClientBalance:input_type -> banking.ReadClientBalanceRequest
+	43, // 63: banking.BankApplication.GetClusterLeader:input_type -> banking.GetClusterLeaderRequest
+	45, // 64: banking.BankApplication.Prepare2PC:input_type -> banking.Prepare2PCRequest
+	47, // 65: banking.BankApplication.CommitOrAbort2PC:input_type -> banking.CommitOrAbort2PCRequest
+	49, // 66: banking.BankApplication.AcceptMessageFor2PCCommit:input_type -> banking.AcceptMessageFor2PCCommitRequest
+	51, // 67: banking.BankApplication.CommitMessageFor2PCCommit:input_type -> banking.CommitMessageFor2PCCommitRequest
+	8,  // 68: banking.BankApplication.AcceptMessage:output_type -> banking.AcceptMessageResponse
+	10, // 69: banking.BankApplication.CommitMessage:output_type -> banking.CommitMessageResponse
+	54, // 70: banking.BankApplication.Prepare:output_type -> google.protobuf.Empty
+	54, // 71: banking.BankApplication.Promise:output_type -> google.protobuf.Empty
+	22, // 72: banking.BankApplication.NewView:output_type -> banking.NewViewResponse
+	24, // 73: banking.BankApplication.Heartbeat:output_type -> banking.HeartbeatResponse
+	27, // 74: banking.BankApplication.UpdateNodeStatus:output_type -> banking.AliveResponse
+	31, // 75: banking.BankApplication.FailCurrentLeader:output_type -> banking.FailCurrentLeaderResponse
+	5,  // 76: banking.BankApplication.HandleClientRequest:output_type -> banking.ClientResponseMessage
+	12, // 77: banking.BankApplication.GetStatus:output_type -> banking.StatusResponse
+	14, // 78: banking.BankApplication.GetDB:output_type -> banking.DBResponse
+	17, // 79: banking.BankApplication.GetLog:output_type -> banking.LogResponse
+	29, // 80: banking.BankApplication.PrintView:output_type -> banking.PrintViewResponse
+	33, // 81: banking.BankApplication.PrintLog:output_type -> banking.PrintLogResponse
+	40, // 82: banking.BankApplication.PrintBalance:output_type -> banking.PrintBalanceResponse
+	35, // 83: banking.BankApplication.PerformActiveCatchUpAsFollower:output_type -> banking.ActiveCatchUpResponse
+	42, // 84: banking.BankApplication.GetLeaderLogForActiveCatching:output_type -> banking.GetLeaderLogResponse
+	54, // 85: banking.BankApplication.FlushPreviousDataAndUpdatePeersStatus:output_type -> google.protobuf.Empty
+	54, // 86: banking.BankApplication.ScheduleNextElectionDuringStartOfSet:output_type -> google.protobuf.Empty
+	38, // 87: banking.BankApplication.ReadClientBalance:output_type -> banking.ReadClientBalanceResponse
+	44, // 88: banking.BankApplication.GetClusterLeader:output_type -> banking.GetClusterLeaderResponse
+	46, // 89: banking.BankApplication.Prepare2PC:output_type -> banking.Prepare2PCResponse
+	48, // 90: banking.BankApplication.CommitOrAbort2PC:output_type -> banking.CommitOrAbort2PCResponse
+	50, // 91: banking.BankApplication.AcceptMessageFor2PCCommit:output_type -> banking.AcceptMessageFor2PCCommitResponse
+	52, // 92: banking.BankApplication.CommitMessageFor2PCCommit:output_type -> banking.CommitMessageFor2PCCommitResponse
+	68, // [68:93] is the sub-list for method output_type
+	43, // [43:68] is the sub-list for method input_type
 	43, // [43:43] is the sub-list for extension type_name
 	43, // [43:43] is the sub-list for extension extendee
 	0,  // [0:43] is the sub-list for field type_name

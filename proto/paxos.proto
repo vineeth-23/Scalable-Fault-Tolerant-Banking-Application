@@ -303,6 +303,7 @@ service BankApplication {
   rpc GetLeaderLogForActiveCatching(GetLeaderLogRequest) returns (GetLeaderLogResponse);
 
   rpc FlushPreviousDataAndUpdatePeersStatus   (FlushAndUpdateStatusRequest) returns (google.protobuf.Empty);
+  rpc ScheduleNextElectionDuringStartOfSet(google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc ReadClientBalance(ReadClientBalanceRequest) returns (ReadClientBalanceResponse);
 
   // 2PC

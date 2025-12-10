@@ -84,6 +84,7 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		if leaderAddr, ok := c.manager.GetClusterLeader(clusterID); ok && leaderAddr != "" {
 			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+			start := time.Now()
 			ok := c.handleClientRequest(ctx, leaderAddr, tx)
 			cancel()
 
@@ -92,12 +93,14 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 					c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, leaderAddr, attempt)
 				//log.Printf("Length of AllExecutedTransferTransactions is %d", len(c.manager.AllExecutedTransferTransactions))
 				c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+				RecordPerf(true, time.Since(start))
 				return true
 			}
 		}
 
 		{
 			ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+			start := time.Now()
 			ok := c.handleClientRequest(ctx, rootAddr, tx)
 			cancel()
 
@@ -105,6 +108,7 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 				log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) executed via rootNode %s (attempt %d)",
 					c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, rootAddr, attempt)
 				c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+				RecordPerf(true, time.Since(start))
 				return true
 			}
 		}
@@ -116,12 +120,14 @@ func (c *Client) SendTransaction(tx *Txn, allPeers map[int32]string) bool {
 			addr := allPeers[nid]
 
 			go func(addr string) {
+				start := time.Now()
 				if c.handleClientRequest(ctx2, addr, tx) {
 					select {
 					case successCh <- struct{}{}:
 						log.Printf("[Client %s] Txn: (%s->%s (%d) time: %d) executed via multicast at %s (attempt %d)",
 							c.ID, tx.Sender, tx.Reciever, tx.Amount, tx.Time, addr, attempt)
 						c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+						RecordPerf(true, time.Since(start))
 						cancel2()
 					default:
 					}
@@ -158,9 +164,11 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 
 	if leaderAddr, ok := c.manager.GetClusterLeader(clusterID); ok && leaderAddr != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		start := time.Now()
 		ok := c.handleReadRPC(ctx, leaderAddr, tx)
 		cancel()
 		if ok {
+			RecordPerf(true, time.Since(start))
 			return true
 		}
 	}
@@ -170,9 +178,11 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 
 	rootAddr := allPeers[int32(rootNode)]
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	start := time.Now()
 	ok := c.handleReadRPC(ctx, rootAddr, tx)
 	cancel()
 	if ok {
+		RecordPerf(true, time.Since(start))
 		return true
 	}
 
@@ -182,10 +192,12 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 	for _, nid := range clusterPeers {
 		addr := allPeers[nid]
 		go func(addr string) {
+			start := time.Now()
 			ok := c.handleReadRPC(ctx2, addr, tx)
 			if ok {
 				select {
 				case respCh <- true:
+					RecordPerf(true, time.Since(start))
 				default:
 				}
 			}

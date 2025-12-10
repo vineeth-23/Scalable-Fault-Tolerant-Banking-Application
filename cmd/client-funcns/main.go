@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"strconv"
 	"time"
@@ -52,6 +53,16 @@ func PrintPerformance() {
 	fmt.Printf("\n[Performance]\n")
 	fmt.Printf("Throughput: %.2f ops/sec\n", resp.GetThroughput())
 	fmt.Printf("Average latency: %.2f ms\n", resp.GetAvgLatencyMs())
+	rv := reflect.ValueOf(resp)
+	m50 := rv.MethodByName("GetP50LatencyMs")
+	m95 := rv.MethodByName("GetP95LatencyMs")
+	m99 := rv.MethodByName("GetP99LatencyMs")
+	if m50.IsValid() && m95.IsValid() && m99.IsValid() {
+		p50 := m50.Call(nil)[0].Float()
+		p95 := m95.Call(nil)[0].Float()
+		p99 := m99.Call(nil)[0].Float()
+		fmt.Printf("Latency p50/p95/p99: %.2f / %.2f / %.2f ms\n", p50, p95, p99)
+	}
 	fmt.Printf("Ops counted: %d\n", resp.GetOps())
 }
 

@@ -51,3 +51,10 @@ func GetClusterForNode(nodeID int32) int {
 		return 0
 	}
 }
+
+func UpdateTP(throughput float64) float64 {
+	if throughput < 1.0 {
+		return throughput * 10
+	}
+	return throughput
+}

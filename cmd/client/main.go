@@ -78,6 +78,7 @@ func main() {
 		fmt.Println("Press ENTER to run this set...")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		var wg sync.WaitGroup
+		//var wg1 sync.WaitGroup
 
 		// Persist resharding plan after this set so subsequent sets use updated mapping
 		//moves := cm.ComputeReshardMoves()
@@ -156,6 +157,30 @@ func main() {
 			}(nodeID, addr)
 		}
 		wg.Wait()
+
+		//for nodeID, addr := range peers {
+		//	wg1.Add(1)
+		//	go func(nodeID int32, addr string) {
+		//		defer wg1.Done()
+		//		conn, err := grpc.NewClient(
+		//			addr,
+		//			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		//		)
+		//		if err != nil {
+		//			return
+		//		}
+		//		defer conn.Close()
+		//
+		//		node := pb.NewBankApplicationClient(conn)
+		//
+		//		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		//		defer cancel()
+		//		_, err = node.ScheduleNextElectionDuringStartOfSet(ctx, &emptypb.Empty{})
+		//	}(nodeID, addr)
+		//}
+		//wg1.Wait()
+		//
+		//time.Sleep(10 * time.Second)
 
 		time.Sleep(3 * time.Second)
 

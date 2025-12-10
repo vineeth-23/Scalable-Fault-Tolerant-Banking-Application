@@ -48,6 +48,8 @@ func RunBenchmark(cfg BenchmarkConfig) {
 
 	//stop := time.After(time.Duration(cfg.DurationSec) * time.Second)
 
+	//AllExecutedTransferTransactions := make([]*Txn, 0)
+
 	for w := 0; w < cfg.Concurrency; w++ {
 		wg.Add(1)
 		go func(workerID int) {
@@ -81,6 +83,9 @@ func RunBenchmark(cfg BenchmarkConfig) {
 							continue
 						}
 						ok = client1.SendTransaction(txn, peers)
+						//if ok {
+						//	AllExecutedTransferTransactions = append(AllExecutedTransferTransactions, txn)
+						//}
 					} else {
 						continue
 					}
@@ -121,4 +126,32 @@ func RunBenchmark(cfg BenchmarkConfig) {
 	log.Printf("p90 Latency: %.2f ms", s.P90LatMs)
 	log.Printf("p99 Latency: %.2f ms", s.P99LatMs)
 	log.Printf("Throughput:  %.2f ops/sec", throughput)
+
+	log.Printf("--------------------------------------RESHARD MOVES AFTER BENCHMARKING-------------------------------------- ")
+	moves := cm.ComputeReshardMoves()
+	if len(moves) > 0 {
+		//upd := make(map[int]int, len(moves))
+		for _, m := range moves {
+			log.Printf("[Reshard] Move: Account=%d FromCluster=%d → ToCluster=%d",
+				m.Account, m.FromCluster, m.ToCluster)
+			//upd[int(m.Account)] = int(m.ToCluster)
+		}
+		//if err := database.BulkSetShardMappings(upd); err != nil {
+		//	log.Printf("[Reshard] failed to persist shard mapping: %v", err)
+		//} else {
+		//	log.Printf("[Reshard] persisted %d moves", len(moves))
+		//	for _, m := range moves {
+		//		var bal int32
+		//		bal = 10
+		//		if err := database.SetClusterBalance(int(m.ToCluster), int(m.Account), bal); err != nil {
+		//			log.Printf("[Reshard] error: couldn't write balance for acc=%d to cluster=%d: %v", m.Account, m.ToCluster, err)
+		//			continue
+		//		}
+		//		// Remove from old cluster to avoid duplication
+		//		if err := database.DeleteClusterBalance(int(m.FromCluster), int(m.Account)); err != nil {
+		//			log.Printf("[Reshard] warn: couldn't delete acc=%d from old cluster=%d: %v", m.Account, m.FromCluster, err)
+		//		}
+		//	}
+		//}
+	}
 }

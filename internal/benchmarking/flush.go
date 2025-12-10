@@ -16,7 +16,7 @@ import (
 
 func FlushBeforeBenchmark(peers map[int32]string) {
 	log.Println("[Benchmark] Flushing previous data on all nodes...")
-	
+
 	liveNodes := []string{"n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9"}
 
 	var liveNodeIDs []int32
@@ -27,6 +27,7 @@ func FlushBeforeBenchmark(peers map[int32]string) {
 	}
 
 	var wg sync.WaitGroup
+	//var wg1 sync.WaitGroup
 
 	for nodeID, addr := range peers {
 		wg.Add(1)
@@ -46,7 +47,7 @@ func FlushBeforeBenchmark(peers map[int32]string) {
 
 			client := pb.NewBankApplicationClient(conn)
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 
 			_, err = client.FlushPreviousDataAndUpdatePeersStatus(ctx,
@@ -66,6 +67,28 @@ func FlushBeforeBenchmark(peers map[int32]string) {
 	}
 
 	wg.Wait()
+
+	//for nodeID, addr := range peers {
+	//	wg1.Add(1)
+	//	go func(nodeID int32, addr string) {
+	//		defer wg1.Done()
+	//		conn, err := grpc.NewClient(
+	//			addr,
+	//			grpc.WithTransportCredentials(insecure.NewCredentials()),
+	//		)
+	//		if err != nil {
+	//			return
+	//		}
+	//		defer conn.Close()
+	//
+	//		node := pb.NewBankApplicationClient(conn)
+	//
+	//		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	//		defer cancel()
+	//		_, err = node.ScheduleNextElectionDuringStartOfSet(ctx, &emptypb.Empty{})
+	//	}(nodeID, addr)
+	//}
+	//wg1.Wait()
 
 	log.Println("[Benchmark] Finished flushing all node state. Sleeping 3 seconds...")
 	time.Sleep(3 * time.Second)
