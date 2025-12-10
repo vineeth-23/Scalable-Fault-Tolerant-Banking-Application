@@ -26,8 +26,6 @@ const (
 	maxRetries = 4
 )
 
-// dynamicClusterID returns the cluster ID for a client using the Redis-backed
-// shard mapping. Falls back to the default range-based mapping if not present.
 func dynamicClusterID(clientID int32) int {
 	c, err := database.GetShardMapping(int(clientID))
 	if err == nil && c >= 1 && c <= 3 {
@@ -210,6 +208,10 @@ func (c *Client) SendRead(tx *Txn, allPeers map[int32]string) bool {
 		cancel2()
 		return true
 	case <-ctx2.Done():
+		log.Printf(
+			"READ Txn failed => sender=%s time=%v TIMED OUT (no quorum is alive)",
+			tx.Sender, tx.Time,
+		)
 		// failed
 	}
 	cancel2()

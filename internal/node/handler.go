@@ -60,7 +60,6 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 	//log.Printf("client request transaction recievied is from %s to %s of %d and sequence is %d", req.GetTransaction().GetSender(), req.GetTransaction().GetReciever(), req.GetTransaction().GetAmount(), n.SequenceNumber)
 	n.mu.Unlock()
 
-	// Build accept message
 	accept := &pb.AcceptMessageRequest{
 		MessageType:          pb.MessageType_ACCEPT,
 		SequenceNumber:       int32(seq),
@@ -77,7 +76,6 @@ func (n *Node) ImplementPaxos(req *pb.ClientRequestMessage, additionalParameters
 		NodeNo: ballotNumber.NodeNo,
 	}
 
-	// Send accept to all peers
 	var wg sync.WaitGroup
 	responses := make(chan *pb.AcceptMessageResponse, len(n.AliveClusterPeers))
 

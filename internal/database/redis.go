@@ -22,15 +22,11 @@ func InitRedisClient(addr string) {
 	})
 }
 
-// ---------------------- Balance migration helpers ----------------------
-
-// DeleteClientBalance removes a client's balance entry from a specific node's bucket.
 func DeleteClientBalance(nodeID int32, clientID string) error {
 	key := fmt.Sprintf("node:%d", nodeID)
 	return rdb.HDel(ctx, key, clientID).Err()
 }
 
-// ClusterNodeIDs returns the three node IDs that belong to a cluster.
 func ClusterNodeIDs(cluster int) []int32 {
 	switch cluster {
 	case 1:
@@ -44,7 +40,6 @@ func ClusterNodeIDs(cluster int) []int32 {
 	}
 }
 
-// GetClusterBalance tries to read a client's balance from any node within the given cluster.
 func GetClusterBalance(cluster int, clientID int) (int32, error) {
 	nodes := ClusterNodeIDs(cluster)
 	if len(nodes) == 0 {
@@ -59,7 +54,6 @@ func GetClusterBalance(cluster int, clientID int) (int32, error) {
 	return 0, fmt.Errorf("balance for client %d not found in cluster %d", clientID, cluster)
 }
 
-// SetClusterBalance writes a client's balance to all nodes in a cluster.
 func SetClusterBalance(cluster int, clientID int, balance int32) error {
 	nodes := ClusterNodeIDs(cluster)
 	if len(nodes) == 0 {
@@ -67,7 +61,6 @@ func SetClusterBalance(cluster int, clientID int, balance int32) error {
 	}
 	cid := strconv.Itoa(clientID)
 	for _, nid := range nodes {
-		//log.Printf("Updating client balance for client id: %d to %d at node-%d", clientID, balance, nid)
 		if err := UpdateClientBalance(nid, cid, balance); err != nil {
 			return err
 		}
@@ -75,7 +68,6 @@ func SetClusterBalance(cluster int, clientID int, balance int32) error {
 	return nil
 }
 
-// DeleteClusterBalance removes a client's balance from all nodes in a cluster.
 func DeleteClusterBalance(cluster int, clientID int) error {
 	nodes := ClusterNodeIDs(cluster)
 	if len(nodes) == 0 {
@@ -132,14 +124,9 @@ func DeleteWALEntry(nodeID int32, txnTime int32) error {
 	return rdb.HDel(ctx, key, fmt.Sprintf("%d", txnTime)).Err()
 }
 
-// ---------------------- Shard Mapping (client -> cluster) ----------------------
-
 const shardMapKey = "shardmap"
 
-// EnsureShardMapInitialized initializes the shard map with default range-based
-// mapping if it is currently empty. Subsequent calls are no-ops.
 func EnsureShardMapInitialized(totalAccounts int) error {
-	// If the hash already has fields, do nothing
 	n, err := rdb.HLen(ctx, shardMapKey).Result()
 	if err != nil {
 		return err
@@ -148,7 +135,6 @@ func EnsureShardMapInitialized(totalAccounts int) error {
 		return nil
 	}
 
-	// Initialize defaults according to range-based sharding
 	fields := make([]interface{}, 0, totalAccounts*2)
 	for acc := 1; acc <= totalAccounts; acc++ {
 		c := common.GetClusterIDForClient(int32(acc))
@@ -162,7 +148,6 @@ func EnsureShardMapInitialized(totalAccounts int) error {
 }
 
 func IntializeShardMap(totalAccounts int) error {
-	// Initialize defaults according to range-based sharding
 	fields := make([]interface{}, 0, totalAccounts*2)
 	for acc := 1; acc <= totalAccounts; acc++ {
 		c := common.GetClusterIDForClient(int32(acc))
@@ -175,8 +160,6 @@ func IntializeShardMap(totalAccounts int) error {
 	return rdb.HSet(ctx, shardMapKey, fields...).Err()
 }
 
-// GetShardMapping returns the cluster ID [1..3] for a given client.
-// Falls back to range-based mapping if none is stored.
 func GetShardMapping(clientID int) (int, error) {
 	if clientID <= 0 {
 		return 0, nil
@@ -200,7 +183,6 @@ func GetShardMapping(clientID int) (int, error) {
 	return v, nil
 }
 
-// BulkSetShardMappings writes multiple client->cluster assignments atomically.
 func BulkSetShardMappings(m map[int]int) error {
 	if len(m) == 0 {
 		return nil
@@ -219,8 +201,6 @@ func BulkSetShardMappings(m map[int]int) error {
 	return rdb.HSet(ctx, shardMapKey, fields...).Err()
 }
 
-// GetAllShardMappings returns all client->cluster assignments currently stored.
-// If the map is empty, the caller may assume default range mapping applies.
 func GetAllShardMappings() (map[int]int, error) {
 	vals, err := rdb.HGetAll(ctx, shardMapKey).Result()
 	if err != nil {

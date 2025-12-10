@@ -26,8 +26,7 @@ type Txn struct {
 	Reciever string
 	Amount   int32
 	Time     int32
-	//Command  string // "LF" for leader failure, "" for normal txn
-	Command Command
+	Command  Command
 }
 
 type TxnSet struct {
@@ -97,7 +96,6 @@ func ParseCSV(path string) map[int]*TxnSet {
 			}
 
 		} else if strings.HasPrefix(cell, "R(") && strings.HasSuffix(cell, ")") {
-			// -------- RECOVER --------
 			nodeStr := strings.TrimSuffix(strings.TrimPrefix(cell, "R("), ")")
 			nodeID := parseNodeID(nodeStr)
 			globalTime++
@@ -111,11 +109,9 @@ func ParseCSV(path string) map[int]*TxnSet {
 			}
 
 		} else if strings.HasPrefix(cell, "(") && strings.HasSuffix(cell, ")") {
-			// -------- Transfer or Read --------
 			content := strings.Trim(cell, "()")
 			parts := strings.Split(content, ",")
-
-			// READ (7800)
+			
 			if len(parts) == 1 {
 				clientID := strings.TrimSpace(parts[0])
 				globalTime++

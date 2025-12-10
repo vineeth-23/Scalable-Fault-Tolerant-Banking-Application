@@ -8,13 +8,13 @@ import (
 )
 
 type BenchmarkConfig struct {
-	DurationSec  int     // total run time in seconds
-	Concurrency  int     // number of worker goroutines
-	Transactions int     // max total transactions to run (0 = unlimited)
-	ReadOnly     float64 // fraction of READ-only operations
-	IntraShard   float64 // fraction of intra-shard WRITE operations
-	CrossShard   float64 // fraction of cross-shard WRITE operations
-	Skew         float64 // 0 = uniform, 1 = all hotkeys
+	DurationSec  int
+	Concurrency  int
+	Transactions int
+	ReadOnly     float64
+	IntraShard   float64
+	CrossShard   float64
+	Skew         float64
 }
 
 func ParseFlags() BenchmarkConfig {

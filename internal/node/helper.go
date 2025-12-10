@@ -173,12 +173,9 @@ func (n *Node) startHeartbeats() {
 	}()
 }
 
-// stopHeartbeats stops the heartbeat ticker and signals the heartbeat goroutine to exit.
-// It's safe to call multiple times and avoids closing the stop channel under the lock.
 func (n *Node) stopHeartbeats() {
 	//log.Printf("Stopping heartbeat for node: %d", n.ID)
 	n.mu.Lock()
-	// if no ticker, nothing to do
 	if n.heartbeatTicker == nil {
 		n.mu.Unlock()
 		return
@@ -245,7 +242,6 @@ func (n *Node) updateBalancesCSV() {
 
 	nodeRows := make(map[int][]string)
 
-	// Read existing CSV
 	if _, err := os.Stat(fileName); err == nil {
 		file, err := os.Open(fileName)
 		if err == nil {

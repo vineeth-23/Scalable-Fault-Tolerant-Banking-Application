@@ -48,8 +48,6 @@ func RunBenchmark(cfg BenchmarkConfig) {
 
 	//stop := time.After(time.Duration(cfg.DurationSec) * time.Second)
 
-	//AllExecutedTransferTransactions := make([]*Txn, 0)
-
 	for w := 0; w < cfg.Concurrency; w++ {
 		wg.Add(1)
 		go func(workerID int) {
@@ -83,9 +81,6 @@ func RunBenchmark(cfg BenchmarkConfig) {
 							continue
 						}
 						ok = client1.SendTransaction(txn, peers)
-						//if ok {
-						//	AllExecutedTransferTransactions = append(AllExecutedTransferTransactions, txn)
-						//}
 					} else {
 						continue
 					}

@@ -1086,6 +1086,10 @@ func (s *NodeServer) ReadClientBalance(ctx context.Context, req *pb.ReadClientBa
 	if !n.isAlive {
 		return nil, status.Error(codes.Unavailable, "node is not alive")
 	}
+	numberOfAliveClusterPeers := s.node.AliveClusterPeers
+	if len(numberOfAliveClusterPeers) <= common.F {
+		return nil, status.Error(codes.Unavailable, "No majority in cluster peers")
+	}
 	balance := s.node.Balances[req.GetClientId()]
 	resp := &pb.ReadClientBalanceResponse{
 		Balance: balance,

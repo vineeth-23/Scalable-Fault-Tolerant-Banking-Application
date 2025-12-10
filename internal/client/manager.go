@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// ClientManager orchestrates all clients
 type ClientManager struct {
 	Clients        map[string]*Client
 	clusterLeaders map[int]string
@@ -29,8 +28,6 @@ type ClientManager struct {
 	AllExecutedTransferTransactions []*Txn
 }
 
-// ProcessRetryQueue retries all previously skipped transactions after a RECOVER.
-// Successful ones are removed; failed ones are re-queued for future recovery.
 func (cm *ClientManager) ProcessRetryQueue() {
 	pending := cm.DrainRetryQueue()
 	if len(pending) == 0 {
@@ -162,7 +159,6 @@ func (cm *ClientManager) GetClusterLeader(clusterID int) (string, bool) {
 	return addr, ok
 }
 
-// nextGlobalTime atomically increments global time
 func (cm *ClientManager) nextGlobalTime() int32 {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -183,51 +179,6 @@ func (cm *ClientManager) DrainRetryQueue() []*Txn {
 	cm.retryQueue = []*Txn{}
 	return out
 }
-
-// RunSet processes one set of transactions in parallel per client
-//func (cm *ClientManager) RunSet(txns []*Txn) {
-//	var wg sync.WaitGroup
-//	for _, t := range txns {
-//		t.Time = cm.nextGlobalTime()
-//		wg.Add(1)
-//		go func(tx *Txn) {
-//			defer wg.Done()
-//			cm.clients[tx.Sender].SendTransaction(tx, cm.peers)
-//		}(t)
-//	}
-//	wg.Wait()
-//}
-
-// runSetWithLF processes transactions in batches split by LF commands.
-//func (cm *ClientManager) RunSetWithLF(txns []*Txn) {
-//	var batch []*Txn
-//
-//	retryTxns := cm.DrainRetryQueue()
-//	if len(retryTxns) > 0 {
-//		//log.Printf("Adding %d retried transactions to this set", len(retryTxns))
-//		txns = append(retryTxns, txns...)
-//	}
-//
-//	for _, txn := range txns {
-//		if txn.Command == "LF" {
-//			if len(batch) > 0 {
-//				cm.RunSet(batch)
-//				batch = nil
-//			}
-//
-//			cm.failLeader()
-//
-//			time.Sleep(3 * time.Second)
-//		} else {
-//			batch = append(batch, txn)
-//		}
-//	}
-//
-//	// Run last batch
-//	if len(batch) > 0 {
-//		cm.RunSet(batch)
-//	}
-//}
 
 func (cm *ClientManager) RunSet(txns []*Txn) {
 	i := 0
@@ -285,89 +236,6 @@ func (cm *ClientManager) RunSet(txns []*Txn) {
 		}
 	}
 }
-
-//func (cm *ClientManager) RunSet(txns []*Txn) {
-//	//var wg sync.WaitGroup
-//
-//	for _, tx := range txns {
-//		//wg.Add(1)
-//
-//		//go func(tx *Txn) {
-//		//	defer wg.Done()
-//
-//		switch tx.Command.Type {
-//		case CommandTypeTransfer:
-//			client, ok := cm.clients[tx.Sender]
-//			if !ok {
-//				return
-//			}
-//			client.SendTransaction(tx, cm.peers)
-//
-//		case CommandTypeRead:
-//			client, ok := cm.clients[tx.Sender]
-//			if !ok {
-//				return
-//			}
-//			client.SendRead(tx, cm.peers)
-//
-//		case CommandTypeFail, CommandTypeRecover:
-//			cm.UpdateNodeStatus(tx)
-//
-//		default:
-//			log.Printf("!!Came into Default Mode. Should Not happen!!")
-//		}
-//		//}(tx)
-//	}
-//
-//	//wg.Wait()
-//}
-
-//func (cm *ClientManager) UpdateNodeStatus(tx *Txn) {
-//	nodeID := tx.Command.NodeID
-//
-//	addr, ok := cm.peers[nodeID]
-//	if !ok {
-//		log.Printf("[UpdateNodeStatus] unknown nodeID %d in command %v", nodeID, tx.Command.Type)
-//		return
-//	}
-//
-//	alive := tx.Command.Type == CommandTypeRecover
-//
-//	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-//	defer cancel()
-//
-//	conn, err := grpc.NewClient(
-//		addr,
-//		grpc.WithTransportCredentials(insecure.NewCredentials()),
-//	)
-//	if err != nil {
-//		log.Printf("[UpdateNodeStatus] failed to connect to node %d (%s): %v", nodeID, addr, err)
-//		return
-//	}
-//	defer conn.Close()
-//
-//	node := pb.NewBankApplicationClient(conn)
-//
-//	req := &pb.AliveRequest{
-//		Alive: alive,
-//	}
-//
-//	resp, err := node.UpdateNodeStatus(ctx, req)
-//	if err != nil {
-//		log.Printf("[UpdateNodeStatus] RPC to node %d (%s) failed: %v", nodeID, addr, err)
-//		return
-//	}
-//
-//	if resp != nil && resp.Success {
-//		action := "FAIL"
-//		if alive {
-//			action = "RECOVER"
-//		}
-//		log.Printf("[UpdateNodeStatus] node %d updated successfully (%s)", nodeID, action)
-//	} else {
-//		log.Printf("[UpdateNodeStatus] node %d did not acknowledge status update", nodeID)
-//	}
-//}
 
 func (cm *ClientManager) UpdateNodeStatus(tx *Txn) {
 	failedOrRecoveredNodeID := tx.Command.NodeID

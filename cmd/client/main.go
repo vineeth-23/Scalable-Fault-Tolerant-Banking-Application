@@ -22,13 +22,7 @@ import (
 )
 
 func startClientControlServer(cm *client.ClientManager) {
-	//lis, err := net.Listen("tcp", ":6000")
 	lis, _ := net.Listen("tcp", "127.0.0.1:6000")
-
-	//if err != nil {
-	//	log.Printf("[ClientControl] failed to listen: %v", err)
-	//	return
-	//}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterClientControlServer(grpcServer, client.NewClientControlServer(cm))
@@ -56,7 +50,6 @@ func main() {
 		9: "localhost:50059",
 	}
 
-	// Initialize Redis in the client process for persisting shard mappings
 	database.InitRedisClient("localhost:6379")
 	_ = database.IntializeShardMap(9000)
 
@@ -80,7 +73,6 @@ func main() {
 		var wg sync.WaitGroup
 		//var wg1 sync.WaitGroup
 
-		// Persist resharding plan after this set so subsequent sets use updated mapping
 		//moves := cm.ComputeReshardMoves()
 		//if len(moves) > 0 {
 		//	upd := make(map[int]int, len(moves))
@@ -188,7 +180,6 @@ func main() {
 		cm.RunSet(set.Transactions)
 		client.EndPerformance()
 
-		// persist snapshot for this set so it can be retrieved any time later
 		thr, avg, ops := client.LastPerformance()
 		client.StoreSetPerformance(setNum, thr, avg, ops)
 	}

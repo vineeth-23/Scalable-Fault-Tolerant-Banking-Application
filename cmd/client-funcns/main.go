@@ -381,9 +381,6 @@ func PrintReshard() {
 	}
 
 	fmt.Println("[Reshard] Suggested data movements:")
-	//for _, m := range resp.Moves {
-	//	fmt.Printf("(%d,c%d,c%d)\n", m.Account, m.FromCluster, m.ToCluster)
-	//}
 
 	moves := resp.Moves
 	if len(moves) > 0 {
@@ -404,7 +401,6 @@ func PrintReshard() {
 					log.Printf("[Reshard] error: couldn't write balance for acc=%d to cluster=%d: %v", m.Account, m.ToCluster, err)
 					continue
 				}
-				// Remove from old cluster to avoid duplication
 				if err := database.DeleteClusterBalance(int(m.FromCluster), int(m.Account)); err != nil {
 					log.Printf("[Reshard] warn: couldn't delete acc=%d from old cluster=%d: %v", m.Account, m.FromCluster, err)
 				}

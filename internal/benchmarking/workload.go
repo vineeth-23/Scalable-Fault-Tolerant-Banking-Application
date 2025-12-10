@@ -10,7 +10,7 @@ import (
 
 const (
 	totalAccounts = 9000
-	hotFraction   = 0.01 // 1 percent of keys are "hot"
+	hotFraction   = 0.01
 )
 
 var globalTime int32
@@ -58,8 +58,7 @@ func pickAccount(skew float64) int {
 		// hot: [1, hotSize]
 		return rand.Intn(hotSize) + 1
 	}
-
-	// uniform: [1, totalAccounts]
+	
 	return rand.Intn(totalAccounts) + 1
 }
 

@@ -5,13 +5,11 @@ import (
 	"time"
 )
 
-// finalized snapshot for the most recently completed set
 var (
 	snapMu   sync.RWMutex
 	lastSnap PerfSnapshot
 )
 
-// PerfSnapshot captures finalized metrics for a completed set
 type PerfSnapshot struct {
 	Throughput   float64
 	AvgLatencyMs float64
@@ -21,9 +19,7 @@ type PerfSnapshot struct {
 	DurationMs   int64
 }
 
-// EndPerformance finalizes and stores a snapshot for the most recent set
 func EndPerformance() PerfSnapshot {
-	// copy current window under lock
 	perfMu.Lock()
 	ops := perfOps
 	lats := append([]time.Duration(nil), perfLats...)
@@ -65,8 +61,6 @@ func EndPerformance() PerfSnapshot {
 	return snap
 }
 
-// LastPerformance returns the finalized snapshot values for the most recently
-// completed set (throughput ops/sec, avg latency ms, ops)
 func LastPerformance() (throughput float64, avgLatencyMs float64, ops int) {
 	snapMu.RLock()
 	defer snapMu.RUnlock()
