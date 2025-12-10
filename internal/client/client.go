@@ -308,3 +308,137 @@ func (c *Client) handleReadRPC(ctx context.Context, addr string, tx *Txn) bool {
 
 	return true
 }
+
+func (c *Client) SendReadEventual(tx *Txn, allPeers map[int32]string) bool {
+	<-c.doneCh
+	defer func() { c.doneCh <- struct{}{} }()
+
+	clientID, _ := strconv.Atoi(tx.Sender)
+	clusterID := dynamicClusterID(int32(clientID))
+	clusterPeers := clusterPeersForCluster(clusterID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	respCh := make(chan bool, len(clusterPeers))
+	for _, nid := range clusterPeers {
+		addr := allPeers[nid]
+		go func(addr string) {
+			start := time.Now()
+			ok := c.handleReadRPC(ctx, addr, tx)
+			if ok {
+				select {
+				case respCh <- true:
+					RecordPerf(true, time.Since(start))
+				default:
+				}
+			}
+		}(addr)
+	}
+
+	select {
+	case <-respCh:
+		return true
+	case <-ctx.Done():
+	}
+	return false
+}
+
+func (c *Client) SendTransactionEventual(tx *Txn, allPeers map[int32]string) bool {
+	<-c.doneCh
+	defer func() { c.doneCh <- struct{}{} }()
+
+	clientID, _ := strconv.Atoi(tx.Sender)
+	clusterID := dynamicClusterID(int32(clientID))
+	clusterPeers := clusterPeersForCluster(clusterID)
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	successCh := make(chan struct{}, 1)
+	for _, nid := range clusterPeers {
+		addr := allPeers[nid]
+		go func(addr string) {
+			start := time.Now()
+			if c.handleClientRequest(ctx, addr, tx) {
+				select {
+				case successCh <- struct{}{}:
+					c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+					RecordPerf(true, time.Since(start))
+				default:
+				}
+			}
+		}(addr)
+	}
+
+	select {
+	case <-successCh:
+		return true
+	case <-ctx.Done():
+	}
+	return false
+}
+
+func (c *Client) SendReadSequential(tx *Txn, allPeers map[int32]string) bool {
+	<-c.doneCh
+	defer func() { c.doneCh <- struct{}{} }()
+
+	clientID, _ := strconv.Atoi(tx.Sender)
+	clusterID := dynamicClusterID(int32(clientID))
+
+	if leaderAddr, ok := c.manager.GetClusterLeader(clusterID); ok && leaderAddr != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		start := time.Now()
+		ok := c.handleReadRPC(ctx, leaderAddr, tx)
+		cancel()
+		if ok {
+			RecordPerf(true, time.Since(start))
+			return true
+		}
+	}
+
+	rootNode := clusterRootNodeForCluster(clusterID)
+	rootAddr := allPeers[int32(rootNode)]
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	start := time.Now()
+	ok := c.handleReadRPC(ctx, rootAddr, tx)
+	cancel()
+	if ok {
+		RecordPerf(true, time.Since(start))
+		return true
+	}
+	return false
+}
+
+func (c *Client) SendTransactionSequential(tx *Txn, allPeers map[int32]string) bool {
+	<-c.doneCh
+	defer func() { c.doneCh <- struct{}{} }()
+
+	clientID, _ := strconv.Atoi(tx.Sender)
+	clusterID := dynamicClusterID(int32(clientID))
+
+	if leaderAddr, ok := c.manager.GetClusterLeader(clusterID); ok && leaderAddr != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+		start := time.Now()
+		ok := c.handleClientRequest(ctx, leaderAddr, tx)
+		cancel()
+		if ok {
+			c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+			RecordPerf(true, time.Since(start))
+			return true
+		}
+	}
+
+	rootNode := clusterRootNodeForCluster(clusterID)
+	rootAddr := allPeers[int32(rootNode)]
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	start := time.Now()
+	ok := c.handleClientRequest(ctx, rootAddr, tx)
+	cancel()
+	if ok {
+		c.manager.AllExecutedTransferTransactions = append(c.manager.AllExecutedTransferTransactions, tx)
+		RecordPerf(true, time.Since(start))
+		return true
+	}
+	return false
+}
